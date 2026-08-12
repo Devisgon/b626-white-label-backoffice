@@ -1,0 +1,687 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model categories {
+  id          BigInt     @id @default(autoincrement())
+  name        String
+  description String?
+  status      String?    @default("Active")
+  created_at  DateTime?  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime?  @default(now()) @db.Timestamptz(6)
+  deleted_at  DateTime?  @db.Timestamptz(6)
+  tenant_id   String?    @db.Uuid
+  products    products[]
+
+  @@index([tenant_id])
+}
+
+model product_audit_logs {
+  id           BigInt    @id @default(autoincrement())
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  product_id   BigInt?
+  action       String?
+  description  String?
+  old_data     Json?
+  new_data     Json?
+  performed_by String?   @db.Uuid
+  tenant_id    String?   @db.Uuid
+  products     products? @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_product_audit_product")
+
+  @@index([product_id])
+  @@index([tenant_id])
+}
+
+model products {
+  id                 BigInt               @id(map: "Products_pkey") @default(autoincrement())
+  name               String?
+  sku                String?              @unique
+  barcode            String?              @unique
+  retail_price       Decimal?             @db.Decimal
+  cost               Decimal?             @db.Decimal
+  status             String?
+  created_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  deleted_at         DateTime?            @db.Timestamptz(6)
+  category_id        BigInt?
+  description        String?
+  sale_type          String?              @default("Retail")
+  unit               String?              @default("Piece")
+  size               String?
+  tax                Decimal?             @default(0) @db.Decimal
+  inventory_tracking Boolean?             @default(true)
+  minimum_stock      BigInt?              @default(0)
+  maximum_stock      BigInt?              @default(0)
+  brand_id           BigInt?
+  department_id      BigInt?
+  item_code          String?              @unique
+  supplier_id        BigInt?
+  is_multi_pack      Boolean              @default(false)
+  pack_size          Int?
+  pack_type          String?
+  plu_code           String?              @unique
+  wholesale_price    Decimal?             @db.Decimal
+  tenant_id          String?              @db.Uuid
+  cartonParents      carton_mappings[]    @relation("Carton")
+  cartonChildren     carton_mappings[]    @relation("Child")
+  inventories        inventory[]
+  inventory_logs     inventory_logs[]
+  priceBookItems     price_book_items[]
+  product_audit_logs product_audit_logs[]
+  productInventories product_inventory[]
+  sale_items         sale_items[]
+  brands             brands?              @relation(fields: [brand_id], references: [id])
+  categories         categories?          @relation(fields: [category_id], references: [id])
+  departments        departments?         @relation(fields: [department_id], references: [id])
+  suppliers          suppliers?           @relation(fields: [supplier_id], references: [id])
+
+  @@index([category_id])
+  @@index([brand_id])
+  @@index([supplier_id])
+  @@index([department_id])
+  @@index([status])
+  @@index([deleted_at])
+  @@index([name])
+  @@index([tenant_id])
+}
+
+model carton_mappings {
+  id                BigInt   @id @default(autoincrement())
+  carton_product_id BigInt
+  child_product_id  BigInt
+  quantity          Int
+  created_at        DateTime @default(now())
+  tenant_id         String?  @db.Uuid
+  carton            products @relation("Carton", fields: [carton_product_id], references: [id])
+  child             products @relation("Child", fields: [child_product_id], references: [id])
+
+  @@unique([carton_product_id, child_product_id])
+  @@index([child_product_id])
+  @@index([tenant_id])
+}
+
+model price_books {
+  id          BigInt             @id @default(autoincrement())
+  name        String
+  description String?
+  status      String             @default("Active")
+  created_at  DateTime           @default(now())
+  updated_at  DateTime           @updatedAt
+  tenant_id   String?            @db.Uuid
+  items       price_book_items[]
+
+  @@index([tenant_id])
+}
+
+model price_book_items {
+  id            BigInt      @id @default(autoincrement())
+  price_book_id BigInt
+  product_id    BigInt
+  selling_price Decimal     @db.Decimal
+  created_at    DateTime    @default(now())
+  tenant_id     String?     @db.Uuid
+  priceBook     price_books @relation(fields: [price_book_id], references: [id], onDelete: Cascade)
+  product       products    @relation(fields: [product_id], references: [id])
+
+  @@unique([price_book_id, product_id])
+  @@index([product_id])
+  @@index([tenant_id])
+}
+
+model suppliers {
+  id         BigInt     @id @default(autoincrement())
+  name       String
+  email      String?
+  phone      String?
+  address    String?
+  status     String?    @default("Active")
+  created_at DateTime?  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime?  @default(now()) @db.Timestamptz(6)
+  deleted_at DateTime?  @db.Timestamptz(6)
+  tenant_id  String?    @db.Uuid
+  products   products[]
+
+  @@index([tenant_id])
+}
+
+model brands {
+  id          BigInt     @id @default(autoincrement())
+  name        String
+  description String?
+  status      String?    @default("Active")
+  created_at  DateTime?  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime?  @default(now()) @db.Timestamptz(6)
+  deleted_at  DateTime?  @db.Timestamptz(6)
+  tenant_id   String?    @db.Uuid
+  products    products[]
+
+  @@index([tenant_id])
+}
+
+model departments {
+  id                    BigInt     @id @default(autoincrement())
+  name                  String
+  description           String?
+  status                String?    @default("Active")
+  created_at            DateTime?  @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime?  @default(now()) @db.Timestamptz(6)
+  deleted_at            DateTime?  @db.Timestamptz(6)
+  age_restriction       Boolean?   @default(false)
+  default_margin        Decimal?   @db.Decimal
+  default_tax_rate      Decimal?   @db.Decimal
+  nacs_code             String?
+  pos_department_number Int?
+  tenant_id             String?    @db.Uuid
+  products              products[]
+
+  @@index([tenant_id])
+}
+
+model units {
+  id         BigInt    @id @default(autoincrement())
+  name       String
+  short_name String?
+  status     String?   @default("Active")
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+  deleted_at DateTime? @db.Timestamptz(6)
+  tenant_id  String?   @db.Uuid
+
+  @@index([tenant_id])
+}
+
+model inventory {
+  id                 BigInt           @id @default(autoincrement())
+  product_id         BigInt
+  quantity           Int              @default(0)
+  reserved_quantity  Int              @default(0)
+  minimum_stock      Int?
+  maximum_stock      Int?
+  reorder_level      Int?
+  warehouse          String
+  status             String?          @default("Active")
+  created_at         DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?        @default(now()) @db.Timestamptz(6)
+  deleted_at         DateTime?        @db.Timestamptz(6)
+  available_quantity Int              @default(0)
+  store_location_id  String?          @db.Uuid
+  tenant_id          String?          @db.Uuid
+  products           products         @relation(fields: [product_id], references: [id])
+  inventory_logs     inventory_logs[]
+
+  @@index([product_id])
+  @@index([warehouse])
+  @@index([tenant_id])
+  @@index([store_location_id])
+}
+
+model inventory_logs {
+  id                BigInt    @id @default(autoincrement())
+  inventory_id      BigInt
+  product_id        BigInt
+  action            String
+  previous_quantity Int
+  new_quantity      Int
+  reason            String?
+  created_at        DateTime? @default(now()) @db.Timestamptz(6)
+  store_location_id String?   @db.Uuid
+  tenant_id         String?   @db.Uuid
+  inventory         inventory @relation(fields: [inventory_id], references: [id])
+  products          products  @relation(fields: [product_id], references: [id])
+
+  @@index([inventory_id])
+  @@index([product_id])
+  @@index([tenant_id])
+  @@index([store_location_id])
+}
+
+model inventory_locations {
+  id          BigInt              @id @default(autoincrement())
+  name        String
+  code        String              @unique
+  address     String?
+  status      String              @default("Active")
+  created_at  DateTime            @default(now())
+  updated_at  DateTime            @updatedAt
+  deleted_at  DateTime?
+  tenant_id   String?             @db.Uuid
+  inventories product_inventory[]
+
+  @@index([tenant_id])
+}
+
+model product_inventory {
+  id                BigInt              @id @default(autoincrement())
+  product_id        BigInt
+  location_id       BigInt
+  on_hand_quantity  Int                 @default(0)
+  reserved_quantity Int                 @default(0)
+  reorder_level     Int?
+  minimum_stock     Int?
+  maximum_stock     Int?
+  created_at        DateTime            @default(now())
+  updated_at        DateTime            @updatedAt
+  deleted_at        DateTime?
+  store_location_id String?             @db.Uuid
+  tenant_id         String?             @db.Uuid
+  location          inventory_locations @relation(fields: [location_id], references: [id])
+  product           products            @relation(fields: [product_id], references: [id])
+
+  @@unique([product_id, location_id])
+  @@index([location_id])
+  @@index([tenant_id])
+  @@index([store_location_id])
+}
+
+model Tenant {
+  id        String     @id @default(uuid())
+  name      String
+  createdAt DateTime   @default(now())
+  locations Location[]
+  users     User[]
+
+  @@map("tenants")
+}
+
+model User {
+  id               String           @id @default(uuid())
+  tenantId         String
+  name             String
+  email            String
+  passwordHash     String
+  role             Role             @default(INVENTORY_USER)
+  isActive         Boolean          @default(true)
+  isEmailVerified  Boolean          @default(false)
+  onboardingStatus OnboardingStatus @default(PENDING_EMAIL_VERIFICATION)
+  activeLocationId String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  auditLogs        AuditLog[]
+  otpTokens        OtpToken[]
+  refreshTokens    RefreshToken[]
+  locationAccess   UserLocation[]
+  tenant           Tenant           @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, email])
+  @@map("users")
+}
+
+model Location {
+  id         String         @id @default(uuid())
+  tenantId   String
+  name       String
+  address    String?
+  tenant     Tenant         @relation(fields: [tenantId], references: [id])
+  userAccess UserLocation[]
+
+  @@map("locations")
+}
+
+model UserLocation {
+  userId     String
+  locationId String
+  assignedAt DateTime @default(now())
+  location   Location @relation(fields: [locationId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@id([userId, locationId])
+  @@map("user_locations")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("refresh_tokens")
+}
+
+model OtpToken {
+  id        String     @id @default(uuid())
+  userId    String
+  purpose   OtpPurpose
+  codeHash  String
+  expiresAt DateTime
+  used      Boolean    @default(false)
+  attempts  Int        @default(0)
+  createdAt DateTime   @default(now())
+  user      User       @relation(fields: [userId], references: [id])
+
+  @@map("otp_tokens")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  tenantId  String?
+  action    String
+  metadata  Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model BankAccount {
+  id                            String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId                      String                         @map("tenant_id")
+  locationId                    String                         @map("location_id")
+  accountName                   String                         @map("account_name")
+  institution                   String
+  accountType                   String                         @map("account_type")
+  lastFour                      String                         @map("last_four")
+  openingBalance                Decimal                        @default(0) @map("opening_balance") @db.Decimal(14, 2)
+  currentBalance                Decimal                        @default(0) @map("current_balance") @db.Decimal(14, 2)
+  openingDate                   DateTime                       @map("opening_date") @db.Date
+  status                        String                         @default("active")
+  createdAt                     DateTime                       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                     DateTime                       @default(now()) @map("updated_at") @db.Timestamptz(6)
+  createdBy                     String?                        @map("created_by") @db.Uuid
+  updatedBy                     String?                        @map("updated_by") @db.Uuid
+  bankReconciliations           BankReconciliation[]
+  fundTransfersAsDestination    FundTransfer[]                 @relation("FundTransferDestinationAccount")
+  fundTransfersAsSource         FundTransfer[]                 @relation("FundTransferSourceAccount")
+  payees                        Payee[]
+  recurringTransactionTemplates RecurringTransactionTemplate[]
+  transactions                  Transaction[]
+
+  @@index([tenantId, locationId], map: "idx_bank_accounts_tenant_location")
+  @@map("bank_accounts")
+}
+
+model BankReconciliation {
+  id                        String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId                  String               @map("tenant_id")
+  locationId                String               @map("location_id")
+  bankAccountId             String               @map("bank_account_id") @db.Uuid
+  statementStartDate        DateTime             @map("statement_start_date") @db.Date
+  statementEndDate          DateTime             @map("statement_end_date") @db.Date
+  statementEndingBalance    Decimal              @map("statement_ending_balance") @db.Decimal(14, 2)
+  systemBalanceAtCompletion Decimal?             @map("system_balance_at_completion") @db.Decimal(14, 2)
+  status                    String               @default("in_progress")
+  completedAt               DateTime?            @map("completed_at") @db.Timestamptz(6)
+  createdAt                 DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                 DateTime             @default(now()) @map("updated_at") @db.Timestamptz(6)
+  createdBy                 String?              @map("created_by")
+  updatedBy                 String?              @map("updated_by")
+  bankAccount               BankAccount          @relation(fields: [bankAccountId], references: [id])
+  reconciliationLines       ReconciliationLine[]
+
+  @@index([bankAccountId], map: "idx_reconciliations_account")
+  @@index([tenantId, locationId], map: "idx_reconciliations_tenant_location")
+  @@map("bank_reconciliations")
+}
+
+model BankingAuditLog {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @map("tenant_id")
+  locationId  String   @map("location_id")
+  entityType  String   @map("entity_type")
+  entityId    String   @map("entity_id") @db.Uuid
+  action      String
+  performedBy String?  @map("performed_by")
+  beforeData  Json?    @map("before_data")
+  afterData   Json?    @map("after_data")
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([createdAt], map: "idx_audit_logs_created_at")
+  @@index([entityType, entityId], map: "idx_audit_logs_entity")
+  @@index([tenantId, locationId], map: "idx_audit_logs_tenant_location")
+  @@map("banking_audit_logs")
+}
+
+model ChartOfAccount {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String            @map("tenant_id")
+  locationId       String            @map("location_id")
+  accountCode      String            @map("account_code")
+  accountName      String            @map("account_name")
+  accountCategory  String            @map("account_category")
+  normalBalance    String            @map("normal_balance")
+  parentAccountId  String?           @map("parent_account_id") @db.Uuid
+  description      String?
+  isSystem         Boolean           @default(false) @map("is_system")
+  status           String            @default("active")
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime          @default(now()) @map("updated_at") @db.Timestamptz(6)
+  createdBy        String?           @map("created_by")
+  updatedBy        String?           @map("updated_by")
+  parentAccount    ChartOfAccount?   @relation("ChartOfAccountHierarchy", fields: [parentAccountId], references: [id])
+  childAccounts    ChartOfAccount[]  @relation("ChartOfAccountHierarchy")
+  transactionLines TransactionLine[]
+
+  @@index([tenantId, locationId], map: "idx_coa_tenant_location")
+  @@map("chart_of_accounts")
+}
+
+model FundTransfer {
+  id                       String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId                 String      @map("tenant_id")
+  locationId               String      @map("location_id")
+  sourceAccountId          String      @map("source_account_id") @db.Uuid
+  destinationAccountId     String      @map("destination_account_id") @db.Uuid
+  amount                   Decimal     @db.Decimal(14, 2)
+  transferDate             DateTime    @map("transfer_date") @db.Date
+  memo                     String?
+  sourceTransactionId      String      @map("source_transaction_id") @db.Uuid
+  destinationTransactionId String      @map("destination_transaction_id") @db.Uuid
+  status                   String      @default("posted")
+  voidedAt                 DateTime?   @map("voided_at") @db.Timestamptz(6)
+  voidReason               String?     @map("void_reason")
+  createdAt                DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime    @default(now()) @map("updated_at") @db.Timestamptz(6)
+  createdBy                String?     @map("created_by")
+  updatedBy                String?     @map("updated_by")
+  destinationAccount       BankAccount @relation("FundTransferDestinationAccount", fields: [destinationAccountId], references: [id])
+  destinationTransaction   Transaction @relation("FundTransferDestinationTransaction", fields: [destinationTransactionId], references: [id])
+  sourceAccount            BankAccount @relation("FundTransferSourceAccount", fields: [sourceAccountId], references: [id])
+  sourceTransaction        Transaction @relation("FundTransferSourceTransaction", fields: [sourceTransactionId], references: [id])
+
+  @@index([tenantId, locationId], map: "idx_transfers_tenant_location")
+  @@map("fund_transfers")
+}
+
+model Payee {
+  id                            String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId                      String                         @map("tenant_id")
+  locationId                    String                         @map("location_id")
+  payeeName                     String                         @map("payee_name")
+  payeeType                     String                         @map("payee_type")
+  email                         String?
+  phone                         String?
+  addressLine1                  String?                        @map("address_line1")
+  addressLine2                  String?                        @map("address_line2")
+  city                          String?
+  state                         String?
+  postalCode                    String?                        @map("postal_code")
+  country                       String?
+  taxId                         String?                        @map("tax_id")
+  defaultAccountId              String?                        @map("default_account_id") @db.Uuid
+  notes                         String?
+  status                        String                         @default("active")
+  createdAt                     DateTime                       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                     DateTime                       @default(now()) @map("updated_at") @db.Timestamptz(6)
+  createdBy                     String?                        @map("created_by")
+  updatedBy                     String?                        @map("updated_by")
+  defaultAccount                BankAccount?                   @relation(fields: [defaultAccountId], references: [id])
+  recurringTransactionTemplates RecurringTransactionTemplate[]
+  transactions                  Transaction[]
+
+  @@index([tenantId, locationId], map: "idx_payees_tenant_location")
+  @@map("payees")
+}
+
+model ReconciliationLine {
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reconciliationId   String             @map("reconciliation_id") @db.Uuid
+  transactionId      String             @map("transaction_id") @db.Uuid
+  cleared            Boolean            @default(true)
+  statementReference String?            @map("statement_reference")
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  reconciliation     BankReconciliation @relation(fields: [reconciliationId], references: [id], onDelete: Cascade)
+  transaction        Transaction        @relation(fields: [transactionId], references: [id])
+
+  @@unique([reconciliationId, transactionId], map: "uq_reconciliation_transaction")
+  @@index([reconciliationId], map: "idx_reconciliation_lines_reconciliation")
+  @@index([transactionId], map: "idx_reconciliation_lines_transaction")
+  @@map("reconciliation_lines")
+}
+
+model RecurringTransactionTemplate {
+  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String      @map("tenant_id")
+  locationId      String      @map("location_id")
+  templateName    String      @map("template_name")
+  transactionType String      @map("transaction_type")
+  direction       String
+  bankAccountId   String      @map("bank_account_id") @db.Uuid
+  payeeId         String?     @map("payee_id") @db.Uuid
+  amount          Decimal     @db.Decimal(14, 2)
+  memo            String?
+  linesTemplate   Json        @map("lines_template")
+  frequency       String
+  startDate       DateTime    @map("start_date") @db.Date
+  endDate         DateTime?   @map("end_date") @db.Date
+  nextRunDate     DateTime    @map("next_run_date") @db.Date
+  status          String      @default("active")
+  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime    @default(now()) @map("updated_at") @db.Timestamptz(6)
+  createdBy       String?     @map("created_by")
+  bankAccount     BankAccount @relation(fields: [bankAccountId], references: [id])
+  payee           Payee?      @relation(fields: [payeeId], references: [id])
+
+  @@index([nextRunDate, status], map: "idx_recurring_next_run")
+  @@index([tenantId, locationId], map: "idx_recurring_tenant_location")
+  @@map("recurring_transaction_templates")
+}
+
+model TransactionLine {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  transactionId String         @map("transaction_id") @db.Uuid
+  accountId     String         @map("account_id") @db.Uuid
+  lineType      String         @map("line_type")
+  amount        Decimal        @db.Decimal(14, 2)
+  description   String?
+  lineOrder     Int            @default(0) @map("line_order")
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  account       ChartOfAccount @relation(fields: [accountId], references: [id])
+  transaction   Transaction    @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([accountId], map: "idx_transaction_lines_account")
+  @@index([transactionId], map: "idx_transaction_lines_transaction")
+  @@map("transaction_lines")
+}
+
+model Transaction {
+  id                         String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId                   String               @map("tenant_id")
+  locationId                 String               @map("location_id")
+  transactionType            String               @map("transaction_type")
+  direction                  String
+  transactionDate            DateTime             @map("transaction_date") @db.Date
+  bankAccountId              String               @map("bank_account_id") @db.Uuid
+  payeeId                    String?              @map("payee_id") @db.Uuid
+  referenceNumber            String?              @map("reference_number")
+  memo                       String?
+  amount                     Decimal              @db.Decimal(14, 2)
+  status                     String               @default("draft")
+  postedAt                   DateTime?            @map("posted_at") @db.Timestamptz(6)
+  voidedAt                   DateTime?            @map("voided_at") @db.Timestamptz(6)
+  voidReason                 String?              @map("void_reason")
+  reversalOfTransactionId    String?              @map("reversal_of_transaction_id") @db.Uuid
+  createdAt                  DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                  DateTime             @default(now()) @map("updated_at") @db.Timestamptz(6)
+  createdBy                  String?              @map("created_by")
+  updatedBy                  String?              @map("updated_by")
+  fundTransfersAsDestination FundTransfer[]       @relation("FundTransferDestinationTransaction")
+  fundTransfersAsSource      FundTransfer[]       @relation("FundTransferSourceTransaction")
+  reconciliationLines        ReconciliationLine[]
+  transactionLines           TransactionLine[]
+  bankAccount                BankAccount          @relation(fields: [bankAccountId], references: [id])
+  payee                      Payee?               @relation(fields: [payeeId], references: [id])
+  reversalOf                 Transaction?         @relation("TransactionReversal", fields: [reversalOfTransactionId], references: [id])
+  reversedByEntries          Transaction[]        @relation("TransactionReversal")
+
+  @@index([bankAccountId, status, transactionDate], map: "idx_transactions_account_status_date")
+  @@index([tenantId, locationId], map: "idx_transactions_tenant_location")
+  @@map("transactions")
+}
+
+enum Role {
+  OWNER_ADMIN
+  STORE_MANAGER
+  INVENTORY_USER
+  FINANCE_USER
+}
+
+enum OnboardingStatus {
+  PENDING_EMAIL_VERIFICATION
+  EMAIL_VERIFIED
+  ONBOARDED
+}
+
+enum OtpPurpose {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+model sale {
+  id                String       @id @default(uuid()) @db.Uuid
+  sale_number       String       @unique
+  customer_name     String?
+  customer_phone    String?
+  subtotal          Decimal      @db.Decimal(14, 2)
+  tax               Decimal      @default(0) @db.Decimal(14, 2)
+  discount          Decimal      @default(0) @db.Decimal(14, 2)
+  total             Decimal      @db.Decimal(14, 2)
+  refunded_amount   Decimal      @default(0) @db.Decimal(14, 2)
+  status            String       @default("completed")
+  payment_method    String       @default("cash")
+  created_at        DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at        DateTime?    @db.Timestamptz(6)
+  tenant_id         String?      @db.Uuid
+  store_location_id String?      @db.Uuid
+  items             sale_items[]
+
+  @@index([status])
+  @@index([payment_method])
+  @@index([created_at])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@index([store_location_id])
+  @@map("sales")
+}
+
+model sale_items {
+  id                    BigInt    @id @default(autoincrement())
+  sale_id               String    @db.Uuid
+  product_id            BigInt
+  quantity              Int
+  unit_price            Decimal   @db.Decimal(14, 2)
+  discount              Decimal   @default(0) @db.Decimal(14, 2)
+  tax                   Decimal   @default(0) @db.Decimal(14, 2)
+  total                 Decimal   @db.Decimal(14, 2)
+  refunded_quantity     Int       @default(0)
+  inventory_location_id BigInt?
+  created_at            DateTime  @default(now()) @db.Timestamptz(6)
+
+  sale    sale     @relation(fields: [sale_id], references: [id], onDelete: Cascade)
+  product products @relation(fields: [product_id], references: [id])
+
+  @@index([sale_id])
+  @@index([product_id])
+  @@map("sale_items")
+}
