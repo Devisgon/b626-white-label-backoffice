@@ -101,7 +101,10 @@ export class PayeesService {
     const page = pagination.page ?? 1;
     const limit = pagination.limit ?? 20;
 
-    const where: any = { tenantId: ctx.tenantId, locationId: requireLocationId(ctx) };
+    const where: any = {
+      tenantId: ctx.tenantId,
+      locationId: requireLocationId(ctx),
+    };
     if (status) where.status = status;
     if (type) where.payeeType = type;
     if (search) {
@@ -152,7 +155,8 @@ export class PayeesService {
     if (dto.postalCode !== undefined) payload.postalCode = dto.postalCode;
     if (dto.country !== undefined) payload.country = dto.country;
     if (dto.taxId !== undefined) payload.taxId = dto.taxId;
-    if (dto.defaultAccountId !== undefined) payload.defaultAccountId = dto.defaultAccountId;
+    if (dto.defaultAccountId !== undefined)
+      payload.defaultAccountId = dto.defaultAccountId;
     if (dto.notes !== undefined) payload.notes = dto.notes;
     if (dto.status !== undefined) payload.status = dto.status;
 

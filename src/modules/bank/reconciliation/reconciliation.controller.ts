@@ -18,7 +18,7 @@ import { Ctx } from '../../../common/decorators/tenant-location.decorator';
 import type { RequestContext } from '../../../common/interfaces/request-context.interface';
 import { RequireLocation } from '../../../common/decorators/require-location.decorator';
 import { Roles } from '../../../common/decorators/roles.decorator';
-import { Role } from '../../../auth/enums/role.enum';
+import { Role } from '../../../modules/auth/enums/role.enum';
 
 @ApiTags('Bank Reconciliation')
 @Roles(Role.OWNER_ADMIN, Role.FINANCE_USER)
@@ -28,7 +28,10 @@ export class ReconciliationController {
   constructor(private readonly service: ReconciliationService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Start a new reconciliation session for a bank account + statement period' })
+  @ApiOperation({
+    summary:
+      'Start a new reconciliation session for a bank account + statement period',
+  })
   create(@Ctx() ctx: RequestContext, @Body() dto: CreateReconciliationDto) {
     return this.service.create(ctx, dto);
   }
@@ -36,7 +39,11 @@ export class ReconciliationController {
   @Get()
   @ApiOperation({ summary: 'List reconciliations' })
   @ApiQuery({ name: 'bankAccountId', required: false })
-  @ApiQuery({ name: 'status', required: false, enum: ['in_progress', 'completed', 'cancelled'] })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['in_progress', 'completed', 'cancelled'],
+  })
   findAll(
     @Ctx() ctx: RequestContext,
     @Query() pagination: PaginationQueryDto,
@@ -53,13 +60,21 @@ export class ReconciliationController {
   }
 
   @Get(':id/unmatched-transactions')
-  @ApiOperation({ summary: 'List posted transactions on this account not yet matched to this reconciliation' })
-  getUnmatched(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
+  @ApiOperation({
+    summary:
+      'List posted transactions on this account not yet matched to this reconciliation',
+  })
+  getUnmatched(
+    @Ctx() ctx: RequestContext,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.service.getUnmatchedTransactions(ctx, id);
   }
 
   @Post(':id/match')
-  @ApiOperation({ summary: 'Match/clear a transaction against this reconciliation' })
+  @ApiOperation({
+    summary: 'Match/clear a transaction against this reconciliation',
+  })
   matchLine(
     @Ctx() ctx: RequestContext,
     @Param('id', ParseUUIDPipe) id: string,
@@ -80,7 +95,10 @@ export class ReconciliationController {
 
   @Post(':id/complete')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Complete the reconciliation (validates system balance matches statement)' })
+  @ApiOperation({
+    summary:
+      'Complete the reconciliation (validates system balance matches statement)',
+  })
   complete(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
     return this.service.complete(ctx, id);
   }

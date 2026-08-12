@@ -39,7 +39,9 @@ export class TenantContextGuard implements CanActivate {
       // Should not happen if JwtAuthGuard ran first and the route isn't
       // @Public(), but fail closed rather than let a request through
       // without a tenant scope.
-      throw new BadRequestException('Request is missing an authenticated tenant context');
+      throw new BadRequestException(
+        'Request is missing an authenticated tenant context',
+      );
     }
 
     const requiresLocation = this.reflector.getAllAndOverride<boolean>(

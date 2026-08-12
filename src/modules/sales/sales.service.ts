@@ -690,16 +690,17 @@ export class SalesService {
 
     let refundAmount = 0;
     const lineUpdates: { id: bigint; newRefundedQty: number }[] = [];
-    const stockRestocks: { inventoryLocationId: bigint | null; productId: bigint; quantity: number }[] =
-      [];
+    const stockRestocks: {
+      inventoryLocationId: bigint | null;
+      productId: bigint;
+      quantity: number;
+    }[] = [];
 
     for (const line of sale.items) {
       const refundQty = refundPlan.get(line.id.toString());
       if (!refundQty) continue;
 
-      const perUnitValue = this.roundMoney(
-        Number(line.total) / line.quantity,
-      );
+      const perUnitValue = this.roundMoney(Number(line.total) / line.quantity);
       refundAmount = this.roundMoney(refundAmount + perUnitValue * refundQty);
 
       lineUpdates.push({

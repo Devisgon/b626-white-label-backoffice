@@ -20,7 +20,9 @@ export interface RequestContext {
   role: string;
 }
 
-export const requestContextStorage = new AsyncLocalStorage<Partial<RequestContext>>();
+export const requestContextStorage = new AsyncLocalStorage<
+  Partial<RequestContext>
+>();
 
 export function getRequestContext(): Partial<RequestContext> {
   return requestContextStorage.getStore() ?? {};
@@ -36,7 +38,9 @@ export function getRequestContext(): Partial<RequestContext> {
  * documented) at the type level too, instead of scattering non-null
  * assertions (`ctx.locationId!`) through every banking service.
  */
-export function requireLocationId(ctx: Pick<RequestContext, 'locationId'>): string {
+export function requireLocationId(
+  ctx: Pick<RequestContext, 'locationId'>,
+): string {
   if (!ctx.locationId) {
     throw new Error(
       'requireLocationId() called with no active location in context — ' +
