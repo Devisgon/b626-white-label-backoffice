@@ -24,7 +24,7 @@ import { CreateInventoryDto } from './dto/create-inventory.dto';
 import { UpdateInventoryDto } from './dto/update-inventory.dto';
 import { RequireLocation } from '../../common/decorators/require-location.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { Role } from '../../auth/enums/role.enum';
+import { Role } from '../../modules/auth/enums/role.enum';
 
 
 

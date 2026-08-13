@@ -17,7 +17,7 @@ import { CartonMappingsService } from './carton-mappings.service';
 import { CreateCartonMappingDto } from './dto/create-carton-mapping.dto';
 import { UpdateCartonMappingDto } from './dto/update-carton-mapping.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { Role } from '../../auth/enums/role.enum';
+import { Role } from '../../modules/auth/enums/role.enum';
 
 @ApiTags('Carton Mapping')
 @Roles(Role.OWNER_ADMIN, Role.STORE_MANAGER, Role.INVENTORY_USER)

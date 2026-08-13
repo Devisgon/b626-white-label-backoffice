@@ -32,7 +32,7 @@ from './dto/create-product-inventory.dto';
 import { UpdateProductInventoryDto } from './dto/update-product-inventory.dto';
 import { RequireLocation } from '../../common/decorators/require-location.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { Role } from '../../auth/enums/role.enum';
+import { Role } from '../../modules/auth/enums/role.enum';
 
 
 

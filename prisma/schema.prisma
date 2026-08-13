@@ -306,6 +306,7 @@ model User {
   otpTokens        OtpToken[]
   refreshTokens    RefreshToken[]
   locationAccess   UserLocation[]
+  permissionOverrides UserPermission[]
   tenant           Tenant           @relation(fields: [tenantId], references: [id])
 
   @@unique([tenantId, email])
@@ -319,9 +320,11 @@ model Location {
   address    String?
   tenant     Tenant         @relation(fields: [tenantId], references: [id])
   userAccess UserLocation[]
+  moduleAccess LocationModuleAccess[]
 
   @@map("locations")
 }
+
 
 model UserLocation {
   userId     String
@@ -619,11 +622,100 @@ model Transaction {
   @@map("transactions")
 }
 
+
 enum Role {
   OWNER_ADMIN
   STORE_MANAGER
   INVENTORY_USER
   FINANCE_USER
+}
+
+// The business modules that exist in this system. Add a new value here
+// whenever a new module (e.g. SALES already added) is introduced — the
+// migration will just add an enum value, nothing else breaks.
+enum ModuleName {
+  AUTH
+  CATALOGUE
+  BANKING
+  SALES
+}
+
+// Granularity of a permission within a module. Kept small on purpose —
+// VIEW (read-only) vs MANAGE (create/update/delete). The guard used across
+// this codebase (ModulePermissionGuard) currently only checks module-level
+// access (VIEW/MANAGE both count as "has access"), but the action column
+// lets us tighten individual endpoints to MANAGE-only later without a
+// schema change.
+enum PermissionAction {
+  VIEW
+  MANAGE
+}
+
+// Master catalog of permissions. One row per (module, action) pair, e.g.
+// (BANKING, VIEW), (BANKING, MANAGE). Seeded by prisma/seed-permissions.ts.
+model Permission {
+  id          String            @id @default(uuid())
+  module      ModuleName
+  action      PermissionAction
+  description String?
+  createdAt   DateTime          @default(now())
+
+  rolePermissions RolePermission[]
+  userPermissions UserPermission[]
+
+  @@unique([module, action])
+  @@map("permissions")
+}
+
+// Default permissions granted to every user of a given Role. This is the
+// "role" layer of the RBAC — seeded once, editable later via
+// PATCH /api/permissions/roles/:role.
+model RolePermission {
+  id           String     @id @default(uuid())
+  role         Role
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([role, permissionId])
+  @@map("role_permissions")
+}
+
+// Per-user overrides on top of the role defaults. granted = true adds a
+// permission the user's role doesn't have by default; granted = false
+// revokes a permission the role would otherwise grant. This lets an
+// OWNER_ADMIN fine-tune one specific user without creating a whole new
+// role — the standard "role gives defaults, per-user overrides layer on
+// top" RBAC pattern.
+model UserPermission {
+  id           String     @id @default(uuid())
+  userId       String
+  permissionId String
+  granted      Boolean    @default(true)
+  grantedBy    String?
+  createdAt    DateTime   @default(now())
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permissionId])
+  @@map("user_permissions")
+}
+
+// Which modules are even switched on for a given store/location — e.g. a
+// small kiosk location might not use the Banking module at all. Checked by
+// ModulePermissionGuard in addition to the user's own permission. Rows are
+// created automatically (all modules enabled) when a location is created
+// via POST /api/auth/onboarding/location, and can be toggled per module by
+// an OWNER_ADMIN afterwards.
+model LocationModuleAccess {
+  id         String     @id @default(uuid())
+  locationId String
+  module     ModuleName
+  enabled    Boolean    @default(true)
+  location   Location   @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([locationId, module])
+  @@map("location_module_access")
 }
 
 enum OnboardingStatus {
