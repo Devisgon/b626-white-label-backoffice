@@ -78,14 +78,20 @@ async function main() {
 
   const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
   if (!tenant) {
-    console.error(`No tenant found with id "${tenantId}". Check the tenants table.`);
+    console.error(
+      `No tenant found with id "${tenantId}". Check the tenants table.`,
+    );
     process.exit(1);
   }
 
   if (storeLocationId) {
-    const location = await prisma.location.findUnique({ where: { id: storeLocationId } });
+    const location = await prisma.location.findUnique({
+      where: { id: storeLocationId },
+    });
     if (!location) {
-      console.error(`No location found with id "${storeLocationId}". Check the locations table.`);
+      console.error(
+        `No location found with id "${storeLocationId}". Check the locations table.`,
+      );
       process.exit(1);
     }
     if (location.tenantId !== tenantId) {
@@ -98,7 +104,9 @@ async function main() {
 
   console.log(`Backfilling tenant_id = ${tenantId} (tenant: "${tenant.name}")`);
   if (storeLocationId) {
-    console.log(`Backfilling store_location_id = ${storeLocationId} on store-scoped tables`);
+    console.log(
+      `Backfilling store_location_id = ${storeLocationId} on store-scoped tables`,
+    );
   } else {
     console.log(
       'No storeLocationId passed — store-scoped tables (inventory, inventory_logs, ' +
@@ -131,7 +139,11 @@ async function main() {
   }
 
   // Store-scoped tables (stock data, tied to a physical store/branch)
-  const storeScopedTables = ['inventory', 'inventory_logs', 'product_inventory'] as const;
+  const storeScopedTables = [
+    'inventory',
+    'inventory_logs',
+    'product_inventory',
+  ] as const;
 
   for (const table of storeScopedTables) {
     const data: Record<string, unknown> = { tenant_id: tenantId };
@@ -157,10 +169,14 @@ async function main() {
   console.log('\nVerifying...');
   let anyLeft = false;
   for (const table of [...tenantOnlyTables, ...storeScopedTables, 'sale']) {
-    const remaining = await (prisma as any)[table].count({ where: { tenant_id: null } });
+    const remaining = await (prisma as any)[table].count({
+      where: { tenant_id: null },
+    });
     if (remaining > 0) {
       anyLeft = true;
-      console.log(`  WARNING: ${table} still has ${remaining} row(s) with tenant_id = NULL`);
+      console.log(
+        `  WARNING: ${table} still has ${remaining} row(s) with tenant_id = NULL`,
+      );
     }
   }
 
@@ -180,7 +196,9 @@ async function main() {
   }
 
   if (!anyLeft) {
-    console.log('  All clear — no tenant-scoped rows left with a NULL tenant_id.');
+    console.log(
+      '  All clear — no tenant-scoped rows left with a NULL tenant_id.',
+    );
   }
 }
 

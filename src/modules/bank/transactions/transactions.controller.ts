@@ -8,7 +8,12 @@ import {
   ParseUUIDPipe,
   HttpCode,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiSecurity, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { VoidTransactionDto } from './dto/void-transaction.dto';
@@ -22,6 +27,7 @@ import { Role } from '../../../modules/auth/enums/role.enum';
 @ApiTags('Transactions')
 @Roles(Role.OWNER_ADMIN, Role.FINANCE_USER)
 @RequireLocation()
+@ApiBearerAuth('accessToken')
 @Controller('bank/transactions')
 export class TransactionsController {
   constructor(private readonly service: TransactionsService) {}

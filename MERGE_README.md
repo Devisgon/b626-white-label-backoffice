@@ -6,14 +6,14 @@ dauran liye gaye, aur setup ke steps.
 
 ## 1. Kya badla
 
-| Area | Pehle | Ab |
-|---|---|---|
-| NestJS / Prisma version | Product+Banking: Nest 11 / Prisma 6. Auth: Nest 10 / Prisma 5 | Sab **Nest 11 / Prisma 6** pe upgrade |
-| Database | 3 alag Supabase projects | 1 (product module ka Supabase project — jo aapne bataya) |
-| Prisma schema | 3 alag `schema.prisma` | 1 unified `prisma/schema.prisma`, koi naming collision nahi |
-| Auth on product/banking routes | **Public** — koi guard nahi | `JwtAuthGuard` + `RolesGuard` sab routes pe (except `@Public()` wale: login/register/etc) |
+| Area                              | Pehle                                                                                     | Ab                                                                                                               |
+| --------------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| NestJS / Prisma version           | Product+Banking: Nest 11 / Prisma 6. Auth: Nest 10 / Prisma 5                             | Sab **Nest 11 / Prisma 6** pe upgrade                                                                            |
+| Database                          | 3 alag Supabase projects                                                                  | 1 (product module ka Supabase project — jo aapne bataya)                                                         |
+| Prisma schema                     | 3 alag `schema.prisma`                                                                    | 1 unified `prisma/schema.prisma`, koi naming collision nahi                                                      |
+| Auth on product/banking routes    | **Public** — koi guard nahi                                                               | `JwtAuthGuard` + `RolesGuard` sab routes pe (except `@Public()` wale: login/register/etc)                        |
 | Banking's tenant/location context | Client-supplied `x-tenant-id` / `x-location-id` **headers** — koi bhi spoof kar sakta tha | Verified JWT (`req.user.tenantId` / `req.user.activeLocationId`) se derive hota hai — headers ab trust nahi hote |
-| Product/catalogue tenant scoping | Bilkul nahi tha (global tables) | `tenant_id` (+ store-specific tables mein `store_location_id`) — automatically enforced |
+| Product/catalogue tenant scoping  | Bilkul nahi tha (global tables)                                                           | `tenant_id` (+ store-specific tables mein `store_location_id`) — automatically enforced                          |
 
 ## 2. Security fix (important — please note)
 
@@ -58,6 +58,7 @@ hota hai. Ye aam POS/backoffice systems ka standard pattern hai.
 ## 4. Roles
 
 Har controller pe `@Roles(...)` laga diya gaya hai (defaults):
+
 - Banking: `OWNER_ADMIN`, `FINANCE_USER`
 - Catalogue: `OWNER_ADMIN`, `STORE_MANAGER`, `INVENTORY_USER`
 
@@ -92,6 +93,7 @@ npx prisma migrate dev --name merge_three_modules
 Supabase DB mein already data hai, to naye `tenant_id` columns `NOT NULL`
 hain — pehle un rows ko existing (ya ek default) tenant se backfill karna
 hoga, warna migration fail hoga. Options:
+
 1. Fresh DB pe migrate karo (agar abhi test/dev data hai, drop karke fresh
    shuru karo), ya
 2. Migration ko do steps mein todo: pehle `tenant_id` ko nullable add

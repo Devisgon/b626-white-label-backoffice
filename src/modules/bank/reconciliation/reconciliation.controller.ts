@@ -9,7 +9,12 @@ import {
   ParseUUIDPipe,
   HttpCode,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiSecurity, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { ReconciliationService } from './reconciliation.service';
 import { CreateReconciliationDto } from './dto/create-reconciliation.dto';
 import { MatchLineDto } from './dto/match-line.dto';
@@ -23,6 +28,7 @@ import { Role } from '../../../modules/auth/enums/role.enum';
 @ApiTags('Bank Reconciliation')
 @Roles(Role.OWNER_ADMIN, Role.FINANCE_USER)
 @RequireLocation()
+@ApiBearerAuth('accessToken')
 @Controller('bank/reconciliations')
 export class ReconciliationController {
   constructor(private readonly service: ReconciliationService) {}

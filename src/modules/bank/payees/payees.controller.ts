@@ -9,7 +9,12 @@ import {
   Query,
   ParseUUIDPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiSecurity, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { PayeesService } from './payees.service';
 import { CreatePayeeDto } from './dto/create-payee.dto';
 import { UpdatePayeeDto } from './dto/update-payee.dto';
@@ -23,6 +28,7 @@ import { Role } from '../../../modules/auth/enums/role.enum';
 @ApiTags('Payees')
 @Roles(Role.OWNER_ADMIN, Role.FINANCE_USER)
 @RequireLocation()
+@ApiBearerAuth('accessToken')
 @Controller('bank/payees')
 export class PayeesController {
   constructor(private readonly service: PayeesService) {}

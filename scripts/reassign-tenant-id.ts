@@ -61,7 +61,9 @@ async function main() {
   }
 
   if (toLocationId) {
-    const toLocation = await prisma.location.findUnique({ where: { id: toLocationId } });
+    const toLocation = await prisma.location.findUnique({
+      where: { id: toLocationId },
+    });
     if (!toLocation) {
       console.error(`No location found with id "${toLocationId}".`);
       process.exit(1);
@@ -106,7 +108,11 @@ async function main() {
     console.log(`  ${table.padEnd(20)} -> ${result.count} row(s) moved`);
   }
 
-  const storeScopedTables = ['inventory', 'inventory_logs', 'product_inventory'] as const;
+  const storeScopedTables = [
+    'inventory',
+    'inventory_logs',
+    'product_inventory',
+  ] as const;
 
   for (const table of storeScopedTables) {
     const where: Record<string, unknown> = { tenant_id: fromTenantId };
@@ -124,7 +130,10 @@ async function main() {
   const saleData: Record<string, unknown> = { tenant_id: toTenantId };
   if (toLocationId) saleData.store_location_id = toLocationId;
 
-  const saleResult = await prisma.sale.updateMany({ where: saleWhere, data: saleData });
+  const saleResult = await prisma.sale.updateMany({
+    where: saleWhere,
+    data: saleData,
+  });
   console.log(`  ${'sale'.padEnd(20)} -> ${saleResult.count} row(s) moved`);
 
   console.log('\nDone.');
