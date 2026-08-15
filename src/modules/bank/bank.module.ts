@@ -6,6 +6,7 @@ import { TransactionsModule } from './transactions/transactions.module';
 import { TransfersModule } from './transfers/transfers.module';
 import { ReconciliationModule } from './reconciliation/reconciliation.module';
 import { AuditLogModule } from './audit/audit-log.module';
+import { EPrintModule } from './e-print/e-print.module';
 @Module({
   imports: [
     BankAccountsModule,
@@ -15,6 +16,7 @@ import { AuditLogModule } from './audit/audit-log.module';
     TransfersModule,
     ReconciliationModule,
     AuditLogModule,
+    EPrintModule,
   ],
 })
 export class BankModule {}

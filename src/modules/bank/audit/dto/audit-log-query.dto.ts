@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsInt, Min, Max } from 'class-validator';
+import { IsOptional, IsIn, IsInt, Min, Max, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class AuditLogQueryDto {
@@ -18,9 +18,26 @@ export class AuditLogQueryDto {
   @Max(100)
   limit?: number = 20;
 
-  @ApiPropertyOptional({ example: 'transaction' })
+  @ApiPropertyOptional({
+    enum: [
+      'bank_account',
+      'chart_of_account',
+      'payee',
+      'transaction',
+      'fund_transfer',
+      'bank_reconciliation',
+    ],
+  })
   @IsOptional()
-  @IsString()
+  @IsIn([
+    'bank_account',
+    'chart_of_account',
+    'payee',
+    'transaction',
+    'fund_transfer',
+    'bank_reconciliation',
+    'check_print_batch',
+  ])
   entityType?: string;
 
   @ApiPropertyOptional({ description: 'Filter to a specific record ID' })
@@ -28,9 +45,28 @@ export class AuditLogQueryDto {
   @IsString()
   entityId?: string;
 
-  @ApiPropertyOptional({ example: 'voided' })
+  @ApiPropertyOptional({
+    enum: [
+      'created',
+      'updated',
+      'posted',
+      'voided',
+      'closed',
+      'deactivated',
+      'completed',
+      'printed',
+    ],
+  })
   @IsOptional()
-  @IsString()
+  @IsIn([
+    'created',
+    'updated',
+    'posted',
+    'voided',
+    'closed',
+    'deactivated',
+    'completed',
+  ])
   action?: string;
 
   @ApiPropertyOptional({ example: '2026-07-01' })

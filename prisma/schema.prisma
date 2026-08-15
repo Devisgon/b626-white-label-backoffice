@@ -613,6 +613,12 @@ model Transaction {
   payee                      Payee?               @relation(fields: [payeeId], references: [id])
   reversalOf                 Transaction?         @relation("TransactionReversal", fields: [reversalOfTransactionId], references: [id])
   reversedByEntries          Transaction[]        @relation("TransactionReversal")
+  checkNumber                String?              @map("check_number")
+  isPrinted                  Boolean              @default(false) @map("is_printed")
+  printedAt                  DateTime?            @map("printed_at") @db.Timestamptz(6)
+  printBatchId               String?              @map("print_batch_id") @db.Uuid
+  printBatch                 CheckPrintBatch?     @relation(fields: [printBatchId], references: [id])
+  isPayrollCheck             Boolean              @default(false) @map("is_payroll_check")
 
   @@index([bankAccountId, status, transactionDate], map: "idx_transactions_account_status_date")
   @@index([tenantId, locationId], map: "idx_transactions_tenant_location")
@@ -666,17 +672,17 @@ model sale {
 }
 
 model sale_items {
-  id                    BigInt    @id @default(autoincrement())
-  sale_id               String    @db.Uuid
+  id                    BigInt   @id @default(autoincrement())
+  sale_id               String   @db.Uuid
   product_id            BigInt
   quantity              Int
-  unit_price            Decimal   @db.Decimal(14, 2)
-  discount              Decimal   @default(0) @db.Decimal(14, 2)
-  tax                   Decimal   @default(0) @db.Decimal(14, 2)
-  total                 Decimal   @db.Decimal(14, 2)
-  refunded_quantity     Int       @default(0)
+  unit_price            Decimal  @db.Decimal(14, 2)
+  discount              Decimal  @default(0) @db.Decimal(14, 2)
+  tax                   Decimal  @default(0) @db.Decimal(14, 2)
+  total                 Decimal  @db.Decimal(14, 2)
+  refunded_quantity     Int      @default(0)
   inventory_location_id BigInt?
-  created_at            DateTime  @default(now()) @db.Timestamptz(6)
+  created_at            DateTime @default(now()) @db.Timestamptz(6)
 
   sale    sale     @relation(fields: [sale_id], references: [id], onDelete: Cascade)
   product products @relation(fields: [product_id], references: [id])
@@ -684,4 +690,63 @@ model sale_items {
   @@index([sale_id])
   @@index([product_id])
   @@map("sale_items")
+}
+
+model PosDevice {
+  id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String @map("tenant_id")
+  locationId String @map("location_id")
+
+  deviceName String    @map("device_name")
+  deviceCode String    @map("device_code")
+  status     String    @default("offline") // online, offline, disabled
+  lastSyncAt DateTime? @map("last_sync_at") @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  createdBy String?  @map("created_by")
+
+  syncQueueItems PosSyncQueueItem[]
+
+  @@unique([tenantId, locationId, deviceCode])
+  @@index([tenantId, locationId], map: "idx_pos_devices_tenant_location")
+  @@map("pos_devices")
+}
+
+model PosSyncQueueItem {
+  id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String @map("tenant_id")
+  locationId  String @map("location_id")
+  posDeviceId String @map("pos_device_id") @db.Uuid
+
+  entityType   String    @map("entity_type") // 'product', 'price'
+  entityId     String    @map("entity_id")
+  payload      Json
+  status       String    @default("pending") // pending, sent, failed
+  sentAt       DateTime? @map("sent_at") @db.Timestamptz(6)
+  errorMessage String?   @map("error_message")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  posDevice PosDevice @relation(fields: [posDeviceId], references: [id])
+
+  @@index([tenantId, locationId], map: "idx_pos_sync_queue_tenant_location")
+  @@index([posDeviceId, status], map: "idx_pos_sync_queue_device_status")
+  @@map("pos_sync_queue_items")
+}
+
+model CheckPrintBatch {
+  id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String @map("tenant_id")
+  locationId String @map("location_id")
+
+  startingCheckNumber String   @map("starting_check_number")
+  checkCount          Int      @map("check_count")
+  printedBy           String?  @map("printed_by")
+  printedAt           DateTime @default(now()) @map("printed_at") @db.Timestamptz(6)
+
+  transactions Transaction[]
+
+  @@index([tenantId, locationId], map: "idx_check_print_batches_tenant_location")
+  @@map("check_print_batches")
 }

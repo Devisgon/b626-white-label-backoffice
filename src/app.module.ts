@@ -19,7 +19,7 @@ import { BankModule } from './modules/bank/bank.module';
 
 // Sales
 import { SalesModule } from './modules/sales/sales.module';
-
+import { PosIntegrationModule } from './modules/pos-integration/pos-integration.module';
 import { RequestContextMiddleware } from './common/context/request-context.middleware';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { TenantContextGuard } from './common/guards/tenant-context.guard';
@@ -66,10 +66,10 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     AuthModule,
     UsersModule,
     LocationsModule,
-
     CatalogueModule,
     BankModule,
     SalesModule,
+    PosIntegrationModule,
   ],
 
   providers: [

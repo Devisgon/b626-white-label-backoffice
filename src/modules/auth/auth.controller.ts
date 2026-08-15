@@ -145,7 +145,7 @@ export class AuthController {
   @Post('resend-otp')
   @ApiOperation({ summary: 'Resend a verification or password-reset OTP' })
   resendOtp(@Body() dto: ResendOtpDto) {
-    return this.authService.resendOtp(dto.email, dto.purpose as any);
+    return this.authService.resendOtp(dto.email, dto.purpose);
   }
 
   @Post('onboarding/location')
