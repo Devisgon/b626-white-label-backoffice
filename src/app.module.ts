@@ -7,12 +7,12 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
 
 // Auth / tenancy
-import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
-import { LocationsModule } from './locations/locations.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
+import { LocationsModule } from './modules/locations/locations.module';
 
 // Product catalogue
-import { CatalogueModule } from './catalogue/catalogue.module';
+import { CatalogueModule } from './modules/catalogue/catalogue.module';
 
 // Banking
 import { BankModule } from './modules/bank/bank.module';

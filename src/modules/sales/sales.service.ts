@@ -231,9 +231,30 @@ export class SalesService {
       );
 
       if (!stockRow) {
-        insufficientStock.push(
-          `${product.name ?? product.id} (need ${item.quantity})`,
-        );
+        const label = product.name ?? product.id;
+
+        if (candidates.length === 0) {
+          // `product_inventory` is store-scoped (see tenant-scoping.extension.ts):
+          // this product has ZERO stock rows under the caller's current active
+          // location — either stock was never added for this location, or it
+          // was added while a DIFFERENT location was active. This is distinct
+          // from "not enough units" and is the most common cause of every
+          // quantity (even 1) reading as unavailable.
+          insufficientStock.push(
+            `${label} — no stock recorded for your active location ` +
+              `(activeLocationId: ${ctx.locationId}). Check that stock was ` +
+              `added while THIS location was active, not a different one.`,
+          );
+        } else {
+          const totalAvailable = candidates.reduce(
+            (sum, row) => sum + (row.on_hand_quantity - row.reserved_quantity),
+            0,
+          );
+          insufficientStock.push(
+            `${label} (need ${item.quantity}, only ${totalAvailable} available at your active location)`,
+          );
+        }
+
         return null as any;
       }
 
