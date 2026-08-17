@@ -1,3 +1,5 @@
+
+
 /**
  * Seeds the permission catalog (every module x action pair) and the
  * default RolePermission mapping. Safe to re-run — everything is an
@@ -20,6 +22,10 @@ const ALL_PERMISSIONS: { module: ModuleName; action: PermissionAction; descripti
   { module: ModuleName.BANKING, action: PermissionAction.MANAGE, description: 'Create/update transactions, transfers, reconciliations' },
   { module: ModuleName.SALES, action: PermissionAction.VIEW, description: 'View sales records' },
   { module: ModuleName.SALES, action: PermissionAction.MANAGE, description: 'Create/update/void sales' },
+  { module: ModuleName.PAYROLL, action: PermissionAction.VIEW, description: 'View payroll profiles, timesheets, pay runs, payslips' },
+  { module: ModuleName.PAYROLL, action: PermissionAction.MANAGE, description: 'Set pay rates, approve timesheets, run payroll' },
+  { module: ModuleName.SETTINGS, action: PermissionAction.VIEW, description: 'View store settings' },
+  { module: ModuleName.SETTINGS, action: PermissionAction.MANAGE, description: 'Change store settings' },
 ];
 
 // Default role -> permissions mapping. Mirrors MERGE_README's starting
@@ -36,6 +42,10 @@ const ROLE_DEFAULTS: Record<Role, { module: ModuleName; action: PermissionAction
     { module: ModuleName.BANKING, action: PermissionAction.MANAGE },
     { module: ModuleName.SALES, action: PermissionAction.VIEW },
     { module: ModuleName.SALES, action: PermissionAction.MANAGE },
+    { module: ModuleName.PAYROLL, action: PermissionAction.VIEW },
+    { module: ModuleName.PAYROLL, action: PermissionAction.MANAGE },
+    { module: ModuleName.SETTINGS, action: PermissionAction.VIEW },
+    { module: ModuleName.SETTINGS, action: PermissionAction.MANAGE },
   ],
   [Role.STORE_MANAGER]: [
     { module: ModuleName.CATALOGUE, action: PermissionAction.VIEW },
@@ -50,6 +60,8 @@ const ROLE_DEFAULTS: Record<Role, { module: ModuleName; action: PermissionAction
   [Role.FINANCE_USER]: [
     { module: ModuleName.BANKING, action: PermissionAction.VIEW },
     { module: ModuleName.BANKING, action: PermissionAction.MANAGE },
+    { module: ModuleName.PAYROLL, action: PermissionAction.VIEW },
+    { module: ModuleName.PAYROLL, action: PermissionAction.MANAGE },
   ],
 };
 
