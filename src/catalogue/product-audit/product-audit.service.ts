@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { ProductAuditLog } from './interfaces/audit.interface';
+import { ProductAuditLog } from '../../types/catalogue.types';
 
 @Injectable()
 export class ProductAuditService {

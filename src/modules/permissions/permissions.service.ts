@@ -1,13 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ModuleName, PermissionAction, Role } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
-import { EffectivePermission } from '../types/permissions.types';
-
-export interface EffectivePermission {
-  module: ModuleName;
-  action: PermissionAction;
-  source: 'ROLE' | 'USER_OVERRIDE';
-}
+import { PrismaService } from '../../prisma/prisma.service';
+import { EffectivePermission } from '../../types/permissions.types';
 
 @Injectable()
 export class PermissionsService {
