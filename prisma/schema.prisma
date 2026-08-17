@@ -692,49 +692,6 @@ model sale_items {
   @@map("sale_items")
 }
 
-model PosDevice {
-  id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId   String @map("tenant_id")
-  locationId String @map("location_id")
-
-  deviceName String    @map("device_name")
-  deviceCode String    @map("device_code")
-  status     String    @default("offline") // online, offline, disabled
-  lastSyncAt DateTime? @map("last_sync_at") @db.Timestamptz(6)
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
-  createdBy String?  @map("created_by")
-
-  syncQueueItems PosSyncQueueItem[]
-
-  @@unique([tenantId, locationId, deviceCode])
-  @@index([tenantId, locationId], map: "idx_pos_devices_tenant_location")
-  @@map("pos_devices")
-}
-
-model PosSyncQueueItem {
-  id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId    String @map("tenant_id")
-  locationId  String @map("location_id")
-  posDeviceId String @map("pos_device_id") @db.Uuid
-
-  entityType   String    @map("entity_type") // 'product', 'price'
-  entityId     String    @map("entity_id")
-  payload      Json
-  status       String    @default("pending") // pending, sent, failed
-  sentAt       DateTime? @map("sent_at") @db.Timestamptz(6)
-  errorMessage String?   @map("error_message")
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-
-  posDevice PosDevice @relation(fields: [posDeviceId], references: [id])
-
-  @@index([tenantId, locationId], map: "idx_pos_sync_queue_tenant_location")
-  @@index([posDeviceId, status], map: "idx_pos_sync_queue_device_status")
-  @@map("pos_sync_queue_items")
-}
-
 model CheckPrintBatch {
   id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId   String @map("tenant_id")
@@ -749,4 +706,134 @@ model CheckPrintBatch {
 
   @@index([tenantId, locationId], map: "idx_check_print_batches_tenant_location")
   @@map("check_print_batches")
+}
+
+model PosConnection {
+  id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String @map("tenant_id")
+  locationId String @map("location_id")
+
+  provider         String  @default("verifone_ruby_ci") @map("provider")
+  siteName         String  @map("site_name")
+  serviceId        String  @map("service_id")
+  externalSiteId   String  @map("external_site_id")
+  connectionMode   String  @default("file_xml") @map("connection_mode")
+  commanderRelease String? @map("commander_release")
+  notes            String?
+
+  isEnabled      Boolean @default(true) @map("is_enabled")
+  disabledReason String? @map("disabled_reason")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  createdBy String?  @map("created_by")
+
+  mappings        PosMapping[]
+  outboundBatches PosOutboundBatch[]
+  inboundBatches  PosInboundBatch[]
+  events          PosEvent[]
+
+  @@unique([tenantId, locationId])
+  @@index([tenantId, locationId], map: "idx_pos_connections_tenant_location")
+  @@map("pos_connections")
+}
+
+model PosMapping {
+  id              String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String @map("tenant_id")
+  locationId      String @map("location_id")
+  posConnectionId String @map("pos_connection_id") @db.Uuid
+
+  internalEntityType  String  @map("internal_entity_type")
+  internalEntityId    String  @map("internal_entity_id")
+  externalEntityType  String  @map("external_entity_type")
+  externalEntityKey   String  @map("external_entity_key")
+  externalParentKey   String? @map("external_parent_key")
+  externalDisplayName String? @map("external_display_name")
+
+  status     String  @default("unresolved") @map("status")
+  isRequired Boolean @default(true) @map("is_required")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  createdBy String?  @map("created_by")
+
+  posConnection PosConnection @relation(fields: [posConnectionId], references: [id])
+
+  @@unique([posConnectionId, internalEntityType, internalEntityId])
+  @@index([tenantId, locationId], map: "idx_pos_mappings_tenant_location")
+  @@index([posConnectionId, status], map: "idx_pos_mappings_connection_status")
+  @@map("pos_mappings")
+}
+
+model PosOutboundBatch {
+  id              String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String @map("tenant_id")
+  locationId      String @map("location_id")
+  posConnectionId String @map("pos_connection_id") @db.Uuid
+
+  status       String    @default("pending") @map("status")
+  itemCount    Int       @default(0) @map("item_count")
+  sentAt       DateTime? @map("sent_at") @db.Timestamptz(6)
+  errorMessage String?   @map("error_message")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy String?  @map("created_by")
+
+  posConnection PosConnection          @relation(fields: [posConnectionId], references: [id])
+  items         PosOutboundBatchItem[]
+
+  @@index([tenantId, locationId], map: "idx_pos_outbound_batches_tenant_location")
+  @@map("pos_outbound_batches")
+}
+
+model PosOutboundBatchItem {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchId   String @map("batch_id") @db.Uuid
+  mappingId String @map("mapping_id") @db.Uuid
+  payload   Json
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  batch PosOutboundBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId], map: "idx_pos_outbound_items_batch")
+  @@map("pos_outbound_batch_items")
+}
+
+model PosInboundBatch {
+  id              String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String @map("tenant_id")
+  locationId      String @map("location_id")
+  posConnectionId String @map("pos_connection_id") @db.Uuid
+
+  status     String    @default("pending_review") @map("status")
+  itemCount  Int       @default(0) @map("item_count")
+  reviewedBy String?   @map("reviewed_by")
+  reviewedAt DateTime? @map("reviewed_at") @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  posConnection PosConnection @relation(fields: [posConnectionId], references: [id])
+
+  @@index([tenantId, locationId], map: "idx_pos_inbound_batches_tenant_location")
+  @@map("pos_inbound_batches")
+}
+
+model PosEvent {
+  id              String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String @map("tenant_id")
+  locationId      String @map("location_id")
+  posConnectionId String @map("pos_connection_id") @db.Uuid
+
+  eventType   String  @map("event_type")
+  description String?
+  performedBy String? @map("performed_by")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  posConnection PosConnection @relation(fields: [posConnectionId], references: [id])
+
+  @@index([posConnectionId, createdAt], map: "idx_pos_events_connection_date")
+  @@map("pos_events")
 }

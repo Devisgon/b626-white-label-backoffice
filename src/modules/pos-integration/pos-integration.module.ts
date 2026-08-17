@@ -1,12 +1,8 @@
 import { Module } from '@nestjs/common';
-import { PosIntegrationController } from './pos-integration.controller';
-import { PosIntegrationService } from './pos-integration.service';
-import { SalesModule } from '../sales/sales.module';
+import { ConnectionModule } from './connection/connection.module';
+import { MappingsModule } from './mappings/mappings.module';
 
 @Module({
-  imports: [SalesModule],
-  controllers: [PosIntegrationController],
-  providers: [PosIntegrationService],
-  exports: [PosIntegrationService],
+  imports: [ConnectionModule, MappingsModule],
 })
 export class PosIntegrationModule {}

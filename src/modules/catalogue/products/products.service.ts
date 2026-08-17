@@ -59,28 +59,6 @@ export class ProductsService {
   }
 
   // ==========================
-  // HELPER: Optional relation ID -> BigInt (null-safe)
-  // ==========================
-  // Used for optional FK fields (category_id, supplier_id, brand_id,
-  // department_id) coming from a DTO where the field is `@IsOptional()`.
-  // `@IsOptional()` only skips the other validators for null/undefined —
-  // it does NOT strip the property — so a frontend sending `null` for an
-  // unselected dropdown reaches here as `null`, not `undefined`.
-  // `BigInt(null)` throws a raw TypeError (not an HttpException), which the
-  // global exception filter turns into an opaque 500 "Internal server
-  // error". This helper keeps the three states distinct:
-  //   undefined -> undefined (field wasn't sent, Prisma leaves it untouched)
-  //   null      -> null      (explicitly clear the relation)
-  //   number    -> BigInt    (set the relation)
-  private toOptionalBigInt(
-    value: number | null | undefined,
-  ): bigint | null | undefined {
-    if (value === undefined) return undefined;
-    if (value === null) return null;
-    return BigInt(value);
-  }
-
-  // ==========================
   // HELPER: Safely parse numeric values
   // ==========================
   private safeParseFloat(value: any): number | null {
@@ -709,18 +687,25 @@ export class ProductsService {
         data: {
           ...createProductDto,
 
-          // FIX: previously `field !== undefined ? BigInt(field) : undefined`.
-          // @IsOptional() lets `null` through validation (it only skips
-          // @IsInt/@IsPositive for null/undefined, it doesn't strip the
-          // property), so a frontend sending `category_id: null` for an
-          // unselected dropdown hit `BigInt(null)` — which throws a raw
-          // TypeError, not an HttpException, and the global filter turns
-          // that into an opaque 500 "Internal server error". Use the
-          // null-safe helper so null clears the relation instead of crashing.
-          category_id: this.toOptionalBigInt(createProductDto.category_id),
-          supplier_id: this.toOptionalBigInt(createProductDto.supplier_id),
-          brand_id: this.toOptionalBigInt(createProductDto.brand_id),
-          department_id: this.toOptionalBigInt(createProductDto.department_id),
+          category_id:
+            createProductDto.category_id !== undefined
+              ? BigInt(createProductDto.category_id)
+              : undefined,
+
+          supplier_id:
+            createProductDto.supplier_id !== undefined
+              ? BigInt(createProductDto.supplier_id)
+              : undefined,
+
+          brand_id:
+            createProductDto.brand_id !== undefined
+              ? BigInt(createProductDto.brand_id)
+              : undefined,
+
+          department_id:
+            createProductDto.department_id !== undefined
+              ? BigInt(createProductDto.department_id)
+              : undefined,
 
           created_at: new Date(),
           updated_at: new Date(),
@@ -977,13 +962,25 @@ export class ProductsService {
         data: {
           ...updateProductDto,
 
-          // FIX: see toOptionalBigInt() — was `BigInt(field)` unguarded
-          // against `null`, which crashed with a raw TypeError (-> 500)
-          // whenever the frontend sent `null` to clear/unset a relation.
-          category_id: this.toOptionalBigInt(updateProductDto.category_id),
-          supplier_id: this.toOptionalBigInt(updateProductDto.supplier_id),
-          brand_id: this.toOptionalBigInt(updateProductDto.brand_id),
-          department_id: this.toOptionalBigInt(updateProductDto.department_id),
+          category_id:
+            updateProductDto.category_id !== undefined
+              ? BigInt(updateProductDto.category_id)
+              : undefined,
+
+          supplier_id:
+            updateProductDto.supplier_id !== undefined
+              ? BigInt(updateProductDto.supplier_id)
+              : undefined,
+
+          brand_id:
+            updateProductDto.brand_id !== undefined
+              ? BigInt(updateProductDto.brand_id)
+              : undefined,
+
+          department_id:
+            updateProductDto.department_id !== undefined
+              ? BigInt(updateProductDto.department_id)
+              : undefined,
 
           updated_at: new Date(),
         },
