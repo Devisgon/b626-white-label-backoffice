@@ -685,3 +685,208 @@ model sale_items {
   @@index([product_id])
   @@map("sale_items")
 }
+// FUEL MODULE
+// ==========================================================
+
+model fuel_tanks {
+  id            BigInt            @id @default(autoincrement())
+  name          String
+  fuel_type     String
+  capacity      Decimal           @db.Decimal(10, 2)
+  current_stock Decimal           @default(0) @db.Decimal(10, 2)
+  location_id   String?           @db.Uuid
+  status        String?           @default("Active")
+  created_at    DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime          @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at    DateTime?         @db.Timestamptz(6)
+  tenant_id     String?           @db.Uuid
+  pumps         fuel_pumps[]
+  deliveries    fuel_deliveries[]
+  sales         fuel_sales[]
+
+  @@index([status])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@map("fuel_tanks")
+}
+
+model fuel_pumps {
+  id          BigInt       @id @default(autoincrement())
+  name        String
+  tank_id     BigInt
+  location_id String?      @db.Uuid
+  status      String?      @default("Active")
+  created_at  DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at  DateTime?    @db.Timestamptz(6)
+  tenant_id   String?      @db.Uuid
+  tank        fuel_tanks   @relation(fields: [tank_id], references: [id])
+  sales       fuel_sales[]
+
+  @@index([status])
+  @@index([tank_id])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@map("fuel_pumps")
+}
+
+model fuel_prices {
+  id              BigInt    @id @default(autoincrement())
+  fuel_type       String
+  price_per_liter Decimal   @db.Decimal(10, 2)
+  effective_from  DateTime  @db.Timestamptz(6)
+  location_id     String?   @db.Uuid
+  status          String?   @default("Active")
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at      DateTime? @db.Timestamptz(6)
+  tenant_id       String?   @db.Uuid
+
+  @@index([fuel_type])
+  @@index([status])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@map("fuel_prices")
+}
+
+model fuel_deliveries {
+  id             BigInt     @id @default(autoincrement())
+  tank_id        BigInt
+  supplier_name  String?
+  quantity       Decimal    @db.Decimal(10, 2)
+  invoice_number String?
+  delivery_date  DateTime   @db.Timestamptz(6)
+  status         String?    @default("Received")
+  created_at     DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime   @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at     DateTime?  @db.Timestamptz(6)
+  tenant_id      String?    @db.Uuid
+  tank           fuel_tanks @relation(fields: [tank_id], references: [id])
+
+  @@index([tank_id])
+  @@index([status])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@map("fuel_deliveries")
+}
+
+model fuel_sales {
+  id               BigInt     @id @default(autoincrement())
+  pump_id          BigInt
+  tank_id          BigInt
+  opening_reading  Decimal    @db.Decimal(12, 2)
+  closing_reading  Decimal    @db.Decimal(12, 2)
+  liters_sold      Decimal    @db.Decimal(10, 2)
+  price_per_liter  Decimal    @db.Decimal(10, 2)
+  total_amount     Decimal    @db.Decimal(14, 2)
+  payment_method   String?    @default("cash")
+  shift            String?
+  sale_date        DateTime   @db.Timestamptz(6)
+  status           String?    @default("Completed")
+  created_at       DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime   @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at       DateTime?  @db.Timestamptz(6)
+  tenant_id        String?    @db.Uuid
+  pump             fuel_pumps @relation(fields: [pump_id], references: [id])
+  tank             fuel_tanks @relation(fields: [tank_id], references: [id])
+
+  @@index([pump_id])
+  @@index([tank_id])
+  @@index([status])
+  @@index([sale_date])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@map("fuel_sales")
+}
+
+// ==========================================================
+// LOTTERY MODULE
+// ==========================================================
+
+model lottery_games {
+  id               BigInt          @id @default(autoincrement())
+  name             String
+  game_number      String?         @unique
+  ticket_price     Decimal         @db.Decimal(10, 2)
+  tickets_per_pack Int?
+  status           String?         @default("Active")
+  created_at       DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at       DateTime?       @db.Timestamptz(6)
+  tenant_id        String?         @db.Uuid
+  packs            lottery_packs[]
+
+  @@index([status])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@map("lottery_games")
+}
+
+model lottery_packs {
+  id              BigInt          @id @default(autoincrement())
+  game_id         BigInt
+  pack_number     String
+  start_ticket_no Int
+  end_ticket_no   Int
+  activated_at    DateTime?       @db.Timestamptz(6)
+  location_id     String?         @db.Uuid
+  status          String?         @default("In Stock")
+  created_at      DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at      DateTime?       @db.Timestamptz(6)
+  tenant_id       String?         @db.Uuid
+  game            lottery_games   @relation(fields: [game_id], references: [id])
+  sales           lottery_sales[]
+
+  @@index([game_id])
+  @@index([status])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@map("lottery_packs")
+}
+
+model lottery_sales {
+  id                BigInt        @id @default(autoincrement())
+  pack_id           BigInt
+  opening_ticket_no Int
+  closing_ticket_no Int
+  tickets_sold      Int
+  total_amount      Decimal       @db.Decimal(14, 2)
+  payout_amount     Decimal       @default(0) @db.Decimal(14, 2)
+  shift             String?
+  sale_date         DateTime      @db.Timestamptz(6)
+  status            String?       @default("Completed")
+  created_at        DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at        DateTime?     @db.Timestamptz(6)
+  tenant_id         String?       @db.Uuid
+  pack              lottery_packs @relation(fields: [pack_id], references: [id])
+
+  @@index([pack_id])
+  @@index([status])
+  @@index([sale_date])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@map("lottery_sales")
+}
+
+model lottery_settlements {
+  id              BigInt    @id @default(autoincrement())
+  location_id     String?   @db.Uuid
+  settlement_date DateTime  @db.Timestamptz(6)
+  total_sales     Decimal   @db.Decimal(14, 2)
+  total_payouts   Decimal   @db.Decimal(14, 2)
+  net_amount      Decimal   @db.Decimal(14, 2)
+  status          String?   @default("Pending")
+  notes           String?
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at      DateTime? @db.Timestamptz(6)
+  tenant_id       String?   @db.Uuid
+
+  @@index([status])
+  @@index([settlement_date])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@map("lottery_settlements")
+}

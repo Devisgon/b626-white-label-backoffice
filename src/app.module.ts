@@ -19,8 +19,15 @@ import { BankModule } from './modules/bank/bank.module';
 
 // Sales
 import { SalesModule } from './modules/sales/sales.module';
+// Fuel
+import { FuelModule } from './modules/fuel/fuel.module';
+
+// Lottery
+import { LotteryModule } from './modules/lottery/lottery.module';
 
 import { RequestContextMiddleware } from './common/context/request-context.middleware';
+
+
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { TenantContextGuard } from './common/guards/tenant-context.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -76,6 +83,8 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     CatalogueModule,
     BankModule,
     SalesModule,
+    FuelModule,
+    LotteryModule,
   ],
 
   providers: [
