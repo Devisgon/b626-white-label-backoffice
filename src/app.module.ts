@@ -28,6 +28,11 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 //pos integration
 import { PosIntegrationModule } from './modules/pos-integration/pos-integration.module';
+
+//send to pos
+
+import { SendToPosModule } from './modules/send-to-pos/send-to-pos.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -71,6 +76,7 @@ import { PosIntegrationModule } from './modules/pos-integration/pos-integration.
     BankModule,
     SalesModule,
     PosIntegrationModule,
+    SendToPosModule,
   ],
 
   providers: [

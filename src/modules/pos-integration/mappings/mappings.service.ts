@@ -24,9 +24,47 @@ export class MappingsService {
     return ctx.locationId;
   }
 
+  // Validates that internalEntityId actually refers to a real, non-deleted
+  // record — currently only 'product' is checked (against the Catalogue
+  // module's `products` table); other internalEntityTypes are allowed
+  // through unvalidated until their tables are wired up the same way.
+  private async validateInternalEntity(
+    internalEntityType: string,
+    internalEntityId: string,
+  ) {
+    if (internalEntityType !== 'product') {
+      return; // no validation table wired up yet for this entity type
+    }
+
+    let productId: bigint;
+    try {
+      productId = BigInt(internalEntityId);
+    } catch {
+      throw new BadRequestException(
+        `internalEntityId "${internalEntityId}" is not a valid product ID`,
+      );
+    }
+
+    const product = await this.prisma.products.findFirst({
+      where: { id: productId, deleted_at: null },
+      select: { id: true, name: true },
+    });
+
+    if (!product) {
+      throw new NotFoundException(
+        `Product with ID "${internalEntityId}" not found`,
+      );
+    }
+  }
+
   async create(ctx: RequestContext, dto: CreateMappingDto) {
     const locationId = this.requireLocation(ctx);
     const connection = await this.connectionService.findOne(ctx);
+
+    await this.validateInternalEntity(
+      dto.internalEntityType,
+      dto.internalEntityId,
+    );
 
     const existing = await this.prisma.posMapping.findFirst({
       where: {
@@ -41,7 +79,6 @@ export class MappingsService {
       );
     }
 
-    // A mapping is "mapped" once both sides of the pairing are present.
     const status = dto.externalEntityKey ? 'mapped' : 'unresolved';
 
     const mapping = await this.prisma.posMapping.create({
@@ -71,7 +108,6 @@ export class MappingsService {
     return mapping;
   }
 
-  // "Mapping Overview" stats — Total, Required, Mapped, Unresolved, Partial, Blocked
   async getOverview(ctx: RequestContext) {
     const connection = await this.connectionService.findOne(ctx);
 
