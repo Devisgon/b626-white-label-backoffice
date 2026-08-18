@@ -27,9 +27,7 @@ import { Role } from '../../auth/enums/role.enum';
 @ApiBearerAuth('accessToken')
 @Controller('catalogue/units')
 export class UnitsController {
-  constructor(
-    private readonly unitsService: UnitsService,
-  ) {}
+  constructor(private readonly unitsService: UnitsService) {}
 
   // ==========================
   // UNIT STATISTICS
@@ -49,43 +47,36 @@ export class UnitsController {
   @ApiOperation({
     summary: 'Get all units',
   })
-
   @ApiQuery({
     name: 'search',
     required: false,
     description: 'Search by name or short name',
   })
-
   @ApiQuery({
     name: 'status',
     required: false,
     description: 'Filter by status',
   })
-
   @ApiQuery({
     name: 'page',
     required: false,
     example: 1,
   })
-
   @ApiQuery({
     name: 'cursor',
     required: false,
     example: 10,
   })
-
   @ApiQuery({
     name: 'limit',
     required: false,
     example: 10,
   })
-
   @ApiQuery({
     name: 'sortBy',
     required: false,
     example: 'name',
   })
-
   @ApiQuery({
     name: 'order',
     required: false,
@@ -148,10 +139,7 @@ export class UnitsController {
     @Body()
     updateUnitDto: UpdateUnitDto,
   ) {
-    return this.unitsService.update(
-      Number(id),
-      updateUnitDto,
-    );
+    return this.unitsService.update(Number(id), updateUnitDto);
   }
 
   // ==========================

@@ -75,9 +75,7 @@ export class DepartmentsService {
       'updated_at',
     ];
 
-    const validSort = allowedSortFields.includes(sortBy)
-      ? sortBy
-      : 'id';
+    const validSort = allowedSortFields.includes(sortBy) ? sortBy : 'id';
 
     // ==========================
     // CURSOR PAGINATION
@@ -106,9 +104,7 @@ export class DepartmentsService {
         pagination: {
           type: 'cursor',
           limit,
-          nextCursor: hasMore
-            ? Number(data[data.length - 1].id)
-            : null,
+          nextCursor: hasMore ? Number(data[data.length - 1].id) : null,
           hasMore,
         },
         data: this.serialize(data),
@@ -118,23 +114,21 @@ export class DepartmentsService {
     // ==========================
     // OFFSET PAGINATION
     // ==========================
-    const totalRecords =
-      await this.prisma.departments.count({
-        where,
-      });
+    const totalRecords = await this.prisma.departments.count({
+      where,
+    });
 
     const currentPage = page || 1;
     const skip = (currentPage - 1) * limit;
 
-    const data =
-      await this.prisma.departments.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: {
-          [validSort]: order,
-        },
-      });
+    const data = await this.prisma.departments.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: {
+        [validSort]: order,
+      },
+    });
 
     return {
       success: true,
@@ -143,9 +137,7 @@ export class DepartmentsService {
         page: currentPage,
         limit,
         totalRecords,
-        totalPages: Math.ceil(
-          totalRecords / limit,
-        ),
+        totalPages: Math.ceil(totalRecords / limit),
       },
       data: this.serialize(data),
     };
@@ -155,18 +147,15 @@ export class DepartmentsService {
   // GET BY ID
   // ==========================
   async findOne(id: number) {
-    const department =
-      await this.prisma.departments.findFirst({
-        where: {
-          id: BigInt(id),
-          deleted_at: null,
-        },
-      });
+    const department = await this.prisma.departments.findFirst({
+      where: {
+        id: BigInt(id),
+        deleted_at: null,
+      },
+    });
 
     if (!department) {
-      throw new NotFoundException(
-        'Department not found.',
-      );
+      throw new NotFoundException('Department not found.');
     }
 
     return {
@@ -178,99 +167,81 @@ export class DepartmentsService {
   // ==========================
   // CREATE
   // ==========================
-  async create(
-    createDepartmentDto: CreateDepartmentDto,
-  ) {
-    const existing =
-      await this.prisma.departments.findFirst({
-        where: {
-          name: createDepartmentDto.name,
-          deleted_at: null,
-        },
-      });
+  async create(createDepartmentDto: CreateDepartmentDto) {
+    const existing = await this.prisma.departments.findFirst({
+      where: {
+        name: createDepartmentDto.name,
+        deleted_at: null,
+      },
+    });
 
     if (existing) {
-      throw new ConflictException(
-        'Department already exists.',
-      );
+      throw new ConflictException('Department already exists.');
     }
 
-    const department =
-      await this.prisma.departments.create({
-        // tenant_id is injected automatically by the tenant-scoping Prisma
-        // extension (see src/prisma/tenant-scoping.extension.ts)
-        data: {
-          ...createDepartmentDto,
-          created_at: new Date(),
-          updated_at: new Date(),
-        } as any,
-      });
+    const department = await this.prisma.departments.create({
+      // tenant_id is injected automatically by the tenant-scoping Prisma
+      // extension (see src/prisma/tenant-scoping.extension.ts)
+      data: {
+        ...createDepartmentDto,
+        created_at: new Date(),
+        updated_at: new Date(),
+      } as any,
+    });
 
     return {
       success: true,
-      message:
-        'Department created successfully.',
+      message: 'Department created successfully.',
       data: this.serialize(department),
     };
   }
-    // ==========================
+  // ==========================
   // UPDATE
   // ==========================
-  async update(
-    id: number,
-    updateDepartmentDto: UpdateDepartmentDto,
-  ) {
-    const existing =
-      await this.prisma.departments.findFirst({
-        where: {
-          id: BigInt(id),
-          deleted_at: null,
-        },
-      });
+  async update(id: number, updateDepartmentDto: UpdateDepartmentDto) {
+    const existing = await this.prisma.departments.findFirst({
+      where: {
+        id: BigInt(id),
+        deleted_at: null,
+      },
+    });
 
     if (!existing) {
-      throw new NotFoundException(
-        'Department not found.',
-      );
+      throw new NotFoundException('Department not found.');
     }
 
     if (
       updateDepartmentDto.name &&
       updateDepartmentDto.name !== existing.name
     ) {
-      const duplicate =
-        await this.prisma.departments.findFirst({
-          where: {
-            name: updateDepartmentDto.name,
-            id: {
-              not: BigInt(id),
-            },
-            deleted_at: null,
-          },
-        });
-
-      if (duplicate) {
-        throw new ConflictException(
-          'Department already exists.',
-        );
-      }
-    }
-
-    const department =
-      await this.prisma.departments.update({
+      const duplicate = await this.prisma.departments.findFirst({
         where: {
-          id: BigInt(id),
-        },
-        data: {
-          ...updateDepartmentDto,
-          updated_at: new Date(),
+          name: updateDepartmentDto.name,
+          id: {
+            not: BigInt(id),
+          },
+          deleted_at: null,
         },
       });
 
+      if (duplicate) {
+        throw new ConflictException('Department already exists.');
+      }
+    }
+
+    const department = await this.prisma.departments.update({
+      where: {
+        id: BigInt(id),
+      },
+      data: {
+        ...updateDepartmentDto,
+        updated_at: new Date(),
+      },
+    });
+
     return {
       success: true,
-      message:
-        'Department updated successfully.',
+      message: 'Department updated successfully.',
       data: this.serialize(department),
     };
   }
@@ -279,36 +250,31 @@ export class DepartmentsService {
   // SOFT DELETE
   // ==========================
   async remove(id: number) {
-    const existing =
-      await this.prisma.departments.findFirst({
-        where: {
-          id: BigInt(id),
-          deleted_at: null,
-        },
-      });
+    const existing = await this.prisma.departments.findFirst({
+      where: {
+        id: BigInt(id),
+        deleted_at: null,
+      },
+    });
 
     if (!existing) {
-      throw new NotFoundException(
-        'Department not found.',
-      );
+      throw new NotFoundException('Department not found.');
     }
 
-    const department =
-      await this.prisma.departments.update({
-        where: {
-          id: BigInt(id),
-        },
-        data: {
-          status: 'Inactive',
-          deleted_at: new Date(),
-          updated_at: new Date(),
-        },
-      });
+    const department = await this.prisma.departments.update({
+      where: {
+        id: BigInt(id),
+      },
+      data: {
+        status: 'Inactive',
+        deleted_at: new Date(),
+        updated_at: new Date(),
+      },
+    });
 
     return {
       success: true,
-      message:
-        'Department deleted successfully.',
+      message: 'Department deleted successfully.',
       data: this.serialize(department),
     };
   }
@@ -317,38 +283,33 @@ export class DepartmentsService {
   // RESTORE
   // ==========================
   async restore(id: number) {
-    const existing =
-      await this.prisma.departments.findFirst({
-        where: {
-          id: BigInt(id),
-          deleted_at: {
-            not: null,
-          },
+    const existing = await this.prisma.departments.findFirst({
+      where: {
+        id: BigInt(id),
+        deleted_at: {
+          not: null,
         },
-      });
+      },
+    });
 
     if (!existing) {
-      throw new NotFoundException(
-        'Deleted department not found.',
-      );
+      throw new NotFoundException('Deleted department not found.');
     }
 
-    const department =
-      await this.prisma.departments.update({
-        where: {
-          id: BigInt(id),
-        },
-        data: {
-          deleted_at: null,
-          status: 'Active',
-          updated_at: new Date(),
-        },
-      });
+    const department = await this.prisma.departments.update({
+      where: {
+        id: BigInt(id),
+      },
+      data: {
+        deleted_at: null,
+        status: 'Active',
+        updated_at: new Date(),
+      },
+    });
 
     return {
       success: true,
-      message:
-        'Department restored successfully.',
+      message: 'Department restored successfully.',
       data: this.serialize(department),
     };
   }
@@ -357,28 +318,25 @@ export class DepartmentsService {
   // STATISTICS
   // ==========================
   async getStats() {
-    const totalDepartments =
-      await this.prisma.departments.count({
-        where: {
-          deleted_at: null,
-        },
-      });
+    const totalDepartments = await this.prisma.departments.count({
+      where: {
+        deleted_at: null,
+      },
+    });
 
-    const activeDepartments =
-      await this.prisma.departments.count({
-        where: {
-          status: 'Active',
-          deleted_at: null,
-        },
-      });
+    const activeDepartments = await this.prisma.departments.count({
+      where: {
+        status: 'Active',
+        deleted_at: null,
+      },
+    });
 
-    const inactiveDepartments =
-      await this.prisma.departments.count({
-        where: {
-          status: 'Inactive',
-          deleted_at: null,
-        },
-      });
+    const inactiveDepartments = await this.prisma.departments.count({
+      where: {
+        status: 'Inactive',
+        deleted_at: null,
+      },
+    });
 
     return {
       success: true,

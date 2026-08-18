@@ -1,95 +1,63 @@
-import {
-  ApiProperty,
-  ApiPropertyOptional,
-} from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import {
-  IsInt,
-  IsOptional,
-  Min,
-} from 'class-validator';
-
-
+import { IsInt, IsOptional, Min } from 'class-validator';
 
 export class CreateProductInventoryDto {
-
-
   @ApiProperty({
-    example:1,
-    description:'Product ID',
+    example: 1,
+    description: 'Product ID',
   })
   @IsInt()
   @Min(1)
-  product_id:number;
-
-
-
+  product_id: number;
 
   @ApiProperty({
-    example:1,
-    description:'Inventory location ID',
+    example: 1,
+    description: 'Inventory location ID',
   })
   @IsInt()
   @Min(1)
-  location_id:number;
-
-
-
+  location_id: number;
 
   @ApiPropertyOptional({
-    example:100,
-    default:0,
+    example: 100,
+    default: 0,
   })
   @IsOptional()
   @IsInt()
   @Min(0)
-  on_hand_quantity?:number;
-
-
-
+  on_hand_quantity?: number;
 
   @ApiPropertyOptional({
-    example:5,
-    default:0,
+    example: 5,
+    default: 0,
   })
   @IsOptional()
   @IsInt()
   @Min(0)
-  reserved_quantity?:number;
-
-
-
+  reserved_quantity?: number;
 
   @ApiPropertyOptional({
-    example:20,
+    example: 20,
   })
   @IsOptional()
   @IsInt()
   @Min(0)
-  reorder_level?:number;
-
-
-
+  reorder_level?: number;
 
   @ApiPropertyOptional({
-    example:10,
+    example: 10,
   })
   @IsOptional()
   @IsInt()
   @Min(0)
-  minimum_stock?:number;
-
-
-
+  minimum_stock?: number;
 
   @ApiPropertyOptional({
-    example:500,
+    example: 500,
   })
   @IsOptional()
   @IsInt()
   @Min(0)
-  maximum_stock?:number;
-
-
-
+  maximum_stock?: number;
 }

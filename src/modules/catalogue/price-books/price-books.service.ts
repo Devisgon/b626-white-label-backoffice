@@ -38,7 +38,9 @@ export class PriceBooksService {
   private validateId(value: any): bigint {
     const num = Number(value);
     if (!Number.isInteger(num) || num <= 0) {
-      throw new BadRequestException(`Invalid ID: ${value} must be a positive integer`);
+      throw new BadRequestException(
+        `Invalid ID: ${value} must be a positive integer`,
+      );
     }
     return BigInt(num);
   }
@@ -69,7 +71,13 @@ export class PriceBooksService {
       where.status = status;
     }
 
-    const allowedSortFields = ['id', 'name', 'status', 'created_at', 'updated_at'];
+    const allowedSortFields = [
+      'id',
+      'name',
+      'status',
+      'created_at',
+      'updated_at',
+    ];
     const validSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'id';
 
     if (cursor !== undefined && cursor !== null) {
@@ -241,7 +249,9 @@ export class PriceBooksService {
     }
 
     await this.prisma.$transaction(async (tx) => {
-      await tx.price_book_items.deleteMany({ where: { price_book_id: validId } });
+      await tx.price_book_items.deleteMany({
+        where: { price_book_id: validId },
+      });
       await tx.price_books.delete({ where: { id: validId } });
     });
 
@@ -279,7 +289,9 @@ export class PriceBooksService {
     });
 
     if (existingItem) {
-      throw new ConflictException('This product already has a price in this price book. Use update instead.');
+      throw new ConflictException(
+        'This product already has a price in this price book. Use update instead.',
+      );
     }
 
     const item = await this.prisma.price_book_items.create({
@@ -305,7 +317,11 @@ export class PriceBooksService {
   // ==========================
   // UPDATE ITEM
   // ==========================
-  async updateItem(priceBookId: number, itemId: number, dto: UpdatePriceBookItemDto) {
+  async updateItem(
+    priceBookId: number,
+    itemId: number,
+    dto: UpdatePriceBookItemDto,
+  ) {
     const validPriceBookId = this.validateId(priceBookId);
     const validItemId = this.validateId(itemId);
 
@@ -349,6 +365,9 @@ export class PriceBooksService {
 
     await this.prisma.price_book_items.delete({ where: { id: validItemId } });
 
-    return { success: true, message: 'Item removed from price book successfully.' };
+    return {
+      success: true,
+      message: 'Item removed from price book successfully.',
+    };
   }
 }

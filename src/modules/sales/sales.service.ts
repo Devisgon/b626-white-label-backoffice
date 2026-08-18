@@ -318,58 +318,60 @@ export class SalesService {
     // Create sale + deduct stock atomically
     // ----------------------------------------------------------
 
-    const sale = await this.prisma.$transaction(async (tx) => {
-      const createdSale = await tx.sale.create({
-        data: {
-          sale_number: saleNumber,
-          customer_name: dto.customer_name ?? null,
-          customer_phone: dto.customer_phone ?? null,
-          subtotal,
-          tax,
-          discount,
-          total,
-          status: 'completed',
-          payment_method: dto.payment_method ?? 'cash',
-          items: { create: saleItems },
-        },
-        include: {
-          items: {
-            include: {
-              product: {
-                select: { id: true, name: true, sku: true, barcode: true },
+    const sale = await this.prisma.$transaction(
+      async (tx) => {
+        const createdSale = await tx.sale.create({
+          data: {
+            sale_number: saleNumber,
+            customer_name: dto.customer_name ?? null,
+            customer_phone: dto.customer_phone ?? null,
+            subtotal,
+            tax,
+            discount,
+            total,
+            status: 'completed',
+            payment_method: dto.payment_method ?? 'cash',
+            items: { create: saleItems },
+          },
+          include: {
+            items: {
+              include: {
+                product: {
+                  select: { id: true, name: true, sku: true, barcode: true },
+                },
               },
             },
           },
-        },
-      });
-
-      // Deduct stock. Re-checked with a conditional update (on_hand_quantity
-      // must still be >= requested) so a concurrent sale can't oversell
-      // between the read above and this write.
-      for (const deduction of stockDeductions) {
-        const result = await tx.product_inventory.updateMany({
-          where: {
-            id: deduction.inventoryRowId,
-            on_hand_quantity: { gte: deduction.quantity },
-          },
-          data: {
-            on_hand_quantity: { decrement: deduction.quantity },
-          },
         });
 
-        if (result.count === 0) {
-          throw new ConflictException(
-            'Stock changed while processing this sale — please retry.',
-          );
-        }
-      }
+        // Deduct stock. Re-checked with a conditional update (on_hand_quantity
+        // must still be >= requested) so a concurrent sale can't oversell
+        // between the read above and this write.
+        for (const deduction of stockDeductions) {
+          const result = await tx.product_inventory.updateMany({
+            where: {
+              id: deduction.inventoryRowId,
+              on_hand_quantity: { gte: deduction.quantity },
+            },
+            data: {
+              on_hand_quantity: { decrement: deduction.quantity },
+            },
+          });
 
-      return createdSale;
-    },
-   {
-  maxWait: 10000, 
-  timeout: 20000,  
-});
+          if (result.count === 0) {
+            throw new ConflictException(
+              'Stock changed while processing this sale — please retry.',
+            );
+          }
+        }
+
+        return createdSale;
+      },
+      {
+        maxWait: 10000,
+        timeout: 20000,
+      },
+    );
 
     return {
       success: true,
@@ -715,16 +717,17 @@ export class SalesService {
 
     let refundAmount = 0;
     const lineUpdates: { id: bigint; newRefundedQty: number }[] = [];
-    const stockRestocks: { inventoryLocationId: bigint | null; productId: bigint; quantity: number }[] =
-      [];
+    const stockRestocks: {
+      inventoryLocationId: bigint | null;
+      productId: bigint;
+      quantity: number;
+    }[] = [];
 
     for (const line of sale.items) {
       const refundQty = refundPlan.get(line.id.toString());
       if (!refundQty) continue;
 
-      const perUnitValue = this.roundMoney(
-        Number(line.total) / line.quantity,
-      );
+      const perUnitValue = this.roundMoney(Number(line.total) / line.quantity);
       refundAmount = this.roundMoney(refundAmount + perUnitValue * refundQty);
 
       lineUpdates.push({

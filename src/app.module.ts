@@ -19,12 +19,15 @@ import { BankModule } from './modules/bank/bank.module';
 
 // Sales
 import { SalesModule } from './modules/sales/sales.module';
+<<<<<<< HEAD
 // Fuel
 import { FuelModule } from './modules/fuel/fuel.module';
 
 // Lottery
 import { LotteryModule } from './modules/lottery/lottery.module';
 
+=======
+>>>>>>> hadia
 import { RequestContextMiddleware } from './common/context/request-context.middleware';
 
 
@@ -34,6 +37,13 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
+//pos integration
+import { PosIntegrationModule } from './modules/pos-integration/pos-integration.module';
+
+//send to pos
+
+import { SendToPosModule } from './modules/send-to-pos/send-to-pos.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -42,10 +52,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     // Never logs the Authorization header or request bodies with tokens.
     LoggerModule.forRoot({
       pinoHttp: {
-        level:
-          process.env.NODE_ENV === 'production'
-            ? 'info'
-            : 'debug',
+        level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
         transport:
           process.env.NODE_ENV === 'production'
             ? undefined
@@ -66,11 +73,8 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     // Global rate limiting
     ThrottlerModule.forRoot([
       {
-        ttl:
-          Number(process.env.THROTTLE_TTL || 60) *
-          1000,
-        limit:
-          Number(process.env.THROTTLE_LIMIT || 5),
+        ttl: Number(process.env.THROTTLE_TTL || 60) * 1000,
+        limit: Number(process.env.THROTTLE_LIMIT || 5),
       },
     ]),
 
@@ -79,12 +83,16 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     AuthModule,
     UsersModule,
     LocationsModule,
-
     CatalogueModule,
     BankModule,
     SalesModule,
+<<<<<<< HEAD
     FuelModule,
     LotteryModule,
+=======
+    PosIntegrationModule,
+    SendToPosModule,
+>>>>>>> hadia
   ],
 
   providers: [
@@ -108,8 +116,6 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(RequestContextMiddleware)
-      .forRoutes('*');
+    consumer.apply(RequestContextMiddleware).forRoutes('*');
   }
 }

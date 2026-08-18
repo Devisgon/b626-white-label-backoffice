@@ -27,9 +27,7 @@ import { Role } from '../../auth/enums/role.enum';
 @ApiBearerAuth('accessToken')
 @Controller('catalogue/brands')
 export class BrandsController {
-  constructor(
-    private readonly brandsService: BrandsService,
-  ) {}
+  constructor(private readonly brandsService: BrandsService) {}
 
   // ==========================
   // BRAND STATISTICS
@@ -49,43 +47,36 @@ export class BrandsController {
   @ApiOperation({
     summary: 'Get all brands',
   })
-
   @ApiQuery({
     name: 'search',
     required: false,
     description: 'Search by name or description',
   })
-
   @ApiQuery({
     name: 'status',
     required: false,
     description: 'Filter by status',
   })
-
   @ApiQuery({
     name: 'page',
     required: false,
     example: 1,
   })
-
   @ApiQuery({
     name: 'cursor',
     required: false,
     example: 10,
   })
-
   @ApiQuery({
     name: 'limit',
     required: false,
     example: 10,
   })
-
   @ApiQuery({
     name: 'sortBy',
     required: false,
     example: 'name',
   })
-
   @ApiQuery({
     name: 'order',
     required: false,
@@ -148,10 +139,7 @@ export class BrandsController {
     @Body()
     updateBrandDto: UpdateBrandDto,
   ) {
-    return this.brandsService.update(
-      Number(id),
-      updateBrandDto,
-    );
+    return this.brandsService.update(Number(id), updateBrandDto);
   }
 
   // ==========================
@@ -161,12 +149,8 @@ export class BrandsController {
   @ApiOperation({
     summary: 'Restore brand',
   })
-  restore(
-    @Param('id') id: string,
-  ) {
-    return this.brandsService.restore(
-      Number(id),
-    );
+  restore(@Param('id') id: string) {
+    return this.brandsService.restore(Number(id));
   }
 
   // ==========================

@@ -83,8 +83,7 @@ export class CategoriesService {
       'updated_at',
     ];
 
-    const validSort =
-      allowedSortFields.includes(sortBy) ? sortBy : 'id';
+    const validSort = allowedSortFields.includes(sortBy) ? sortBy : 'id';
 
     // CURSOR PAGINATION
     if (cursor) {
@@ -111,9 +110,7 @@ export class CategoriesService {
         pagination: {
           type: 'cursor',
           limit,
-          nextCursor: hasMore
-            ? Number(data[data.length - 1].id)
-            : null,
+          nextCursor: hasMore ? Number(data[data.length - 1].id) : null,
           hasMore,
         },
         data: this.serialize(data),
@@ -122,10 +119,9 @@ export class CategoriesService {
 
     // OFFSET PAGINATION
 
-    const totalRecords =
-      await this.prisma.categories.count({
-        where,
-      });
+    const totalRecords = await this.prisma.categories.count({
+      where,
+    });
 
     const currentPage = page || 1;
 
@@ -157,18 +153,15 @@ export class CategoriesService {
   // GET CATEGORY
   // ==========================
   async findOne(id: number) {
-    const category =
-      await this.prisma.categories.findFirst({
-        where: {
-          id: BigInt(id),
-          deleted_at: null,
-        },
-      });
+    const category = await this.prisma.categories.findFirst({
+      where: {
+        id: BigInt(id),
+        deleted_at: null,
+      },
+    });
 
     if (!category) {
-      throw new NotFoundException(
-        'Category not found.',
-      );
+      throw new NotFoundException('Category not found.');
     }
 
     return {
@@ -180,33 +173,27 @@ export class CategoriesService {
   // ==========================
   // CREATE CATEGORY
   // ==========================
-  async create(
-    createCategoryDto: CreateCategoryDto,
-  ) {
-    const exists =
-      await this.prisma.categories.findFirst({
-        where: {
-          name: createCategoryDto.name,
-          deleted_at: null,
-        },
-      });
+  async create(createCategoryDto: CreateCategoryDto) {
+    const exists = await this.prisma.categories.findFirst({
+      where: {
+        name: createCategoryDto.name,
+        deleted_at: null,
+      },
+    });
 
     if (exists) {
-      throw new ConflictException(
-        'Category already exists.',
-      );
+      throw new ConflictException('Category already exists.');
     }
 
-    const category =
-      await this.prisma.categories.create({
-        // tenant_id is injected automatically by the tenant-scoping Prisma
-        // extension (see src/prisma/tenant-scoping.extension.ts)
-        data: {
-          ...createCategoryDto,
-          created_at: new Date(),
-          updated_at: new Date(),
-        } as any,
-      });
+    const category = await this.prisma.categories.create({
+      // tenant_id is injected automatically by the tenant-scoping Prisma
+      // extension (see src/prisma/tenant-scoping.extension.ts)
+      data: {
+        ...createCategoryDto,
+        created_at: new Date(),
+        updated_at: new Date(),
+      } as any,
+    });
 
     return {
       success: true,
@@ -218,56 +205,43 @@ export class CategoriesService {
   // ==========================
   // UPDATE CATEGORY
   // ==========================
-  async update(
-    id: number,
-    updateCategoryDto: UpdateCategoryDto,
-  ) {
-    const existing =
-      await this.prisma.categories.findFirst({
+  async update(id: number, updateCategoryDto: UpdateCategoryDto) {
+    const existing = await this.prisma.categories.findFirst({
+      where: {
+        id: BigInt(id),
+        deleted_at: null,
+      },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Category not found.');
+    }
+
+    if (updateCategoryDto.name && updateCategoryDto.name !== existing.name) {
+      const duplicate = await this.prisma.categories.findFirst({
         where: {
-          id: BigInt(id),
+          name: updateCategoryDto.name,
           deleted_at: null,
+          id: {
+            not: BigInt(id),
+          },
         },
       });
 
-    if (!existing) {
-      throw new NotFoundException(
-        'Category not found.',
-      );
-    }
-
-    if (
-      updateCategoryDto.name &&
-      updateCategoryDto.name !== existing.name
-    ) {
-      const duplicate =
-        await this.prisma.categories.findFirst({
-          where: {
-            name: updateCategoryDto.name,
-            deleted_at: null,
-            id: {
-              not: BigInt(id),
-            },
-          },
-        });
-
       if (duplicate) {
-        throw new ConflictException(
-          'Category already exists.',
-        );
+        throw new ConflictException('Category already exists.');
       }
     }
 
-    const category =
-      await this.prisma.categories.update({
-        where: {
-          id: BigInt(id),
-        },
-        data: {
-          ...updateCategoryDto,
-          updated_at: new Date(),
-        },
-      });
+    const category = await this.prisma.categories.update({
+      where: {
+        id: BigInt(id),
+      },
+      data: {
+        ...updateCategoryDto,
+        updated_at: new Date(),
+      },
+    });
 
     return {
       success: true,
@@ -280,31 +254,27 @@ export class CategoriesService {
   // SOFT DELETE
   // ==========================
   async remove(id: number) {
-    const existing =
-      await this.prisma.categories.findFirst({
-        where: {
-          id: BigInt(id),
-          deleted_at: null,
-        },
-      });
+    const existing = await this.prisma.categories.findFirst({
+      where: {
+        id: BigInt(id),
+        deleted_at: null,
+      },
+    });
 
     if (!existing) {
-      throw new NotFoundException(
-        'Category not found.',
-      );
+      throw new NotFoundException('Category not found.');
     }
 
-    const category =
-      await this.prisma.categories.update({
-        where: {
-          id: BigInt(id),
-        },
-        data: {
-          status: 'Inactive',
-          deleted_at: new Date(),
-          updated_at: new Date(),
-        },
-      });
+    const category = await this.prisma.categories.update({
+      where: {
+        id: BigInt(id),
+      },
+      data: {
+        status: 'Inactive',
+        deleted_at: new Date(),
+        updated_at: new Date(),
+      },
+    });
 
     return {
       success: true,
@@ -317,33 +287,29 @@ export class CategoriesService {
   // RESTORE CATEGORY
   // ==========================
   async restore(id: number) {
-    const existing =
-      await this.prisma.categories.findFirst({
-        where: {
-          id: BigInt(id),
-          deleted_at: {
-            not: null,
-          },
+    const existing = await this.prisma.categories.findFirst({
+      where: {
+        id: BigInt(id),
+        deleted_at: {
+          not: null,
         },
-      });
+      },
+    });
 
     if (!existing) {
-      throw new NotFoundException(
-        'Deleted category not found.',
-      );
+      throw new NotFoundException('Deleted category not found.');
     }
 
-    const category =
-      await this.prisma.categories.update({
-        where: {
-          id: BigInt(id),
-        },
-        data: {
-          deleted_at: null,
-          status: 'Active',
-          updated_at: new Date(),
-        },
-      });
+    const category = await this.prisma.categories.update({
+      where: {
+        id: BigInt(id),
+      },
+      data: {
+        deleted_at: null,
+        status: 'Active',
+        updated_at: new Date(),
+      },
+    });
 
     return {
       success: true,
@@ -356,28 +322,25 @@ export class CategoriesService {
   // CATEGORY STATS
   // ==========================
   async getStats() {
-    const total =
-      await this.prisma.categories.count({
-        where: {
-          deleted_at: null,
-        },
-      });
+    const total = await this.prisma.categories.count({
+      where: {
+        deleted_at: null,
+      },
+    });
 
-    const active =
-      await this.prisma.categories.count({
-        where: {
-          status: 'Active',
-          deleted_at: null,
-        },
-      });
+    const active = await this.prisma.categories.count({
+      where: {
+        status: 'Active',
+        deleted_at: null,
+      },
+    });
 
-    const inactive =
-      await this.prisma.categories.count({
-        where: {
-          status: 'Inactive',
-          deleted_at: null,
-        },
-      });
+    const inactive = await this.prisma.categories.count({
+      where: {
+        status: 'Inactive',
+        deleted_at: null,
+      },
+    });
 
     return {
       success: true,

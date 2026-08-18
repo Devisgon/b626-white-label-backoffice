@@ -9,7 +9,12 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags,
+import {
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
   ApiBearerAuth,
 } from '@nestjs/swagger';
 
@@ -27,7 +32,9 @@ export class CartonMappingsController {
   constructor(private readonly cartonMappingsService: CartonMappingsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get all carton mappings, optionally filtered by carton product' })
+  @ApiOperation({
+    summary: 'Get all carton mappings, optionally filtered by carton product',
+  })
   @ApiQuery({ name: 'carton_product_id', required: false })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 10 })
@@ -52,7 +59,10 @@ export class CartonMappingsController {
 
   @Post()
   @ApiOperation({ summary: 'Map a child product into a carton/case product' })
-  @ApiResponse({ status: 409, description: 'This carton/child pair is already mapped.' })
+  @ApiResponse({
+    status: 409,
+    description: 'This carton/child pair is already mapped.',
+  })
   create(@Body() dto: CreateCartonMappingDto) {
     return this.cartonMappingsService.create(dto);
   }
@@ -60,7 +70,10 @@ export class CartonMappingsController {
   @Patch(':id')
   @ApiOperation({ summary: 'Update the quantity of a carton mapping' })
   @ApiParam({ name: 'id', example: 1 })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateCartonMappingDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateCartonMappingDto,
+  ) {
     return this.cartonMappingsService.update(id, dto);
   }
 

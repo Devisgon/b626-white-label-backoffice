@@ -76,9 +76,7 @@ export class UnitsService {
       'updated_at',
     ];
 
-    const validSort = allowedSortFields.includes(sortBy)
-      ? sortBy
-      : 'id';
+    const validSort = allowedSortFields.includes(sortBy) ? sortBy : 'id';
 
     // Cursor Pagination
     if (cursor) {
@@ -105,9 +103,7 @@ export class UnitsService {
         pagination: {
           type: 'cursor',
           limit,
-          nextCursor: hasMore
-            ? Number(data[data.length - 1].id)
-            : null,
+          nextCursor: hasMore ? Number(data[data.length - 1].id) : null,
           hasMore,
         },
         data: this.serialize(data),
@@ -212,10 +208,7 @@ export class UnitsService {
       throw new NotFoundException('Unit not found.');
     }
 
-    if (
-      updateUnitDto.name &&
-      updateUnitDto.name !== existing.name
-    ) {
+    if (updateUnitDto.name && updateUnitDto.name !== existing.name) {
       const duplicate = await this.prisma.units.findFirst({
         where: {
           name: updateUnitDto.name,

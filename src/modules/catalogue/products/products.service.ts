@@ -50,7 +50,9 @@ export class ProductsService {
 
     const num = Number(value);
     if (!Number.isInteger(num) || num <= 0) {
-      throw new BadRequestException(`Invalid ID: ${value} must be a positive integer`);
+      throw new BadRequestException(
+        `Invalid ID: ${value} must be a positive integer`,
+      );
     }
 
     return BigInt(num);
@@ -102,20 +104,33 @@ export class ProductsService {
   // ==========================
   private validateTaxRate(tax: number | null): number | null {
     if (tax === null) return null;
-    
+
     if (tax < 0 || tax > 100) {
-      throw new BadRequestException(`Tax rate must be between 0 and 100: ${tax}`);
+      throw new BadRequestException(
+        `Tax rate must be between 0 and 100: ${tax}`,
+      );
     }
-    
+
     return tax;
   }
 
   // ==========================
   // HELPER: Validate stock values
   // ==========================
-  private validateStockValues(minStock: number | null | undefined, maxStock: number | null | undefined): void {
-    if (minStock !== null && minStock !== undefined && maxStock !== null && maxStock !== undefined && minStock > maxStock) {
-      throw new BadRequestException(`Minimum stock (${minStock}) cannot exceed maximum stock (${maxStock})`);
+  private validateStockValues(
+    minStock: number | null | undefined,
+    maxStock: number | null | undefined,
+  ): void {
+    if (
+      minStock !== null &&
+      minStock !== undefined &&
+      maxStock !== null &&
+      maxStock !== undefined &&
+      minStock > maxStock
+    ) {
+      throw new BadRequestException(
+        `Minimum stock (${minStock}) cannot exceed maximum stock (${maxStock})`,
+      );
     }
   }
 
@@ -285,9 +300,7 @@ export class ProductsService {
       'updated_at',
     ];
 
-    const validSortBy = allowedSortFields.includes(sortBy)
-      ? sortBy
-      : 'id';
+    const validSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'id';
 
     // CURSOR PAGINATION
     if (cursor !== undefined && cursor !== null) {
@@ -369,9 +382,7 @@ export class ProductsService {
 
           limit,
 
-          nextCursor: hasMore
-            ? Number(data[data.length - 1].id)
-            : null,
+          nextCursor: hasMore ? Number(data[data.length - 1].id) : null,
 
           hasMore,
         },
@@ -381,10 +392,9 @@ export class ProductsService {
     }
 
     // OFFSET PAGINATION
-    const totalRecords =
-      await this.prisma.products.count({
-        where,
-      });
+    const totalRecords = await this.prisma.products.count({
+      where,
+    });
 
     const currentPage = page || 1;
 
@@ -444,9 +454,7 @@ export class ProductsService {
 
         totalRecords,
 
-        totalPages: Math.ceil(
-          totalRecords / limit,
-        ),
+        totalPages: Math.ceil(totalRecords / limit),
       },
 
       data: this.serialize(data),
@@ -497,9 +505,7 @@ export class ProductsService {
     });
 
     if (!data) {
-      throw new NotFoundException(
-        'Product not found.',
-      );
+      throw new NotFoundException('Product not found.');
     }
 
     return {
@@ -515,7 +521,7 @@ export class ProductsService {
     // Validate stock values
     this.validateStockValues(
       createProductDto.minimum_stock,
-      createProductDto.maximum_stock
+      createProductDto.maximum_stock,
     );
 
     // SKU VALIDATION
@@ -531,133 +537,100 @@ export class ProductsService {
       });
 
       if (skuExists) {
-        throw new ConflictException(
-          'SKU already exists.',
-        );
+        throw new ConflictException('SKU already exists.');
       }
     }
 
     // ITEM CODE VALIDATION
     if (createProductDto.item_code) {
-      const itemCodeExists =
-        await this.prisma.products.findFirst({
-          where: {
-            item_code: createProductDto.item_code,
-            deleted_at: null,
-          },
-          select: {
-            id: true,
-          },
-        });
+      const itemCodeExists = await this.prisma.products.findFirst({
+        where: {
+          item_code: createProductDto.item_code,
+          deleted_at: null,
+        },
+        select: {
+          id: true,
+        },
+      });
 
       if (itemCodeExists) {
-        throw new ConflictException(
-          'Item Code already exists.',
-        );
+        throw new ConflictException('Item Code already exists.');
       }
     }
 
     // BARCODE VALIDATION
     if (createProductDto.barcode) {
-      const barcodeExists =
-        await this.prisma.products.findFirst({
-          where: {
-            barcode: createProductDto.barcode,
-            deleted_at: null,
-          },
-          select: {
-            id: true,
-          },
-        });
+      const barcodeExists = await this.prisma.products.findFirst({
+        where: {
+          barcode: createProductDto.barcode,
+          deleted_at: null,
+        },
+        select: {
+          id: true,
+        },
+      });
 
       if (barcodeExists) {
-        throw new ConflictException(
-          'Barcode already exists.',
-        );
+        throw new ConflictException('Barcode already exists.');
       }
     }
 
     // PLU CODE VALIDATION
     if (createProductDto.plu_code) {
-      const pluExists =
-        await this.prisma.products.findFirst({
-          where: {
-            plu_code: createProductDto.plu_code,
-            deleted_at: null,
-          },
-          select: {
-            id: true,
-          },
-        });
+      const pluExists = await this.prisma.products.findFirst({
+        where: {
+          plu_code: createProductDto.plu_code,
+          deleted_at: null,
+        },
+        select: {
+          id: true,
+        },
+      });
 
       if (pluExists) {
-        throw new ConflictException(
-          'PLU Code already exists.',
-        );
+        throw new ConflictException('PLU Code already exists.');
       }
     }
 
     // CATEGORY VALIDATION
-    if (
-      createProductDto.category_id !== undefined
-    ) {
-      const category =
-        await this.prisma.categories.findFirst({
-          where: {
-            id: BigInt(
-              createProductDto.category_id,
-            ),
-            deleted_at: null,
-          },
-        });
+    if (createProductDto.category_id !== undefined) {
+      const category = await this.prisma.categories.findFirst({
+        where: {
+          id: BigInt(createProductDto.category_id),
+          deleted_at: null,
+        },
+      });
 
       if (!category) {
-        throw new NotFoundException(
-          'Category not found.',
-        );
+        throw new NotFoundException('Category not found.');
       }
     }
 
     // SUPPLIER VALIDATION
-    if (
-      createProductDto.supplier_id !==
-      undefined
-    ) {
-      const supplier =
-        await this.prisma.suppliers.findFirst({
-          where: {
-            id: BigInt(
-              createProductDto.supplier_id,
-            ),
-            deleted_at: null,
-          },
-        });
+    if (createProductDto.supplier_id !== undefined) {
+      const supplier = await this.prisma.suppliers.findFirst({
+        where: {
+          id: BigInt(createProductDto.supplier_id),
+          deleted_at: null,
+        },
+      });
 
       if (!supplier) {
-        throw new NotFoundException(
-          'Supplier not found.',
-        );
+        throw new NotFoundException('Supplier not found.');
       }
     }
 
     // BRAND VALIDATION
-    if (
-      createProductDto.brand_id !== undefined
-    ) {
-      const brand =
-        await this.prisma.brands.findFirst({
-          where: {
-            id: BigInt(
-              createProductDto.brand_id,
-            ),
-            deleted_at: null,
-          },
-        });
+    if (createProductDto.brand_id !== undefined) {
+      const brand = await this.prisma.brands.findFirst({
+        where: {
+          id: BigInt(createProductDto.brand_id),
+          deleted_at: null,
+        },
+      });
 
       if (!brand) {
-        throw new NotFoundException(
-          'Brand not found.',
-        );
+        throw new NotFoundException('Brand not found.');
       }
     }
 
@@ -666,35 +639,28 @@ export class ProductsService {
       id: bigint;
       default_tax_rate: any;
     } | null = null;
-    if (
-      createProductDto.department_id !==
-      undefined
-    ) {
-      department =
-        await this.prisma.departments.findFirst(
-          {
-            where: {
-              id: BigInt(
-                createProductDto.department_id,
-              ),
-              deleted_at: null,
-            },
-            select: {
-              id: true,
-              default_tax_rate: true,
-            },
-          },
-        );
+    if (createProductDto.department_id !== undefined) {
+      department = await this.prisma.departments.findFirst({
+        where: {
+          id: BigInt(createProductDto.department_id),
+          deleted_at: null,
+        },
+        select: {
+          id: true,
+          default_tax_rate: true,
+        },
+      });
 
       if (!department) {
-        throw new NotFoundException(
-          'Department not found.',
-        );
+        throw new NotFoundException('Department not found.');
       }
     }
 
     // Apply department default tax if tax is not provided
-    if (department && (createProductDto.tax === null || createProductDto.tax === undefined)) {
+    if (
+      department &&
+      (createProductDto.tax === null || createProductDto.tax === undefined)
+    ) {
       createProductDto.tax = department.default_tax_rate;
     }
 
@@ -704,103 +670,96 @@ export class ProductsService {
     }
 
     // CREATE PRODUCT
-    const data =
-      await this.prisma.$transaction(async (tx) => {
-        // Check duplicates inside transaction
-        await this.checkUniqueFields(
-          tx,
-          createProductDto.sku,
-          createProductDto.item_code,
-          createProductDto.barcode,
-          undefined,
-          createProductDto.plu_code,
-        );
+    const data = await this.prisma.$transaction(async (tx) => {
+      // Check duplicates inside transaction
+      await this.checkUniqueFields(
+        tx,
+        createProductDto.sku,
+        createProductDto.item_code,
+        createProductDto.barcode,
+        undefined,
+        createProductDto.plu_code,
+      );
 
-        const product = await tx.products.create({
-          // tenant_id is injected automatically by the tenant-scoping
-          // Prisma extension (see src/prisma/tenant-scoping.extension.ts)
-          data: {
-            ...createProductDto,
+      const product = await tx.products.create({
+        // tenant_id is injected automatically by the tenant-scoping
+        // Prisma extension (see src/prisma/tenant-scoping.extension.ts)
+        data: {
+          ...createProductDto,
 
-            category_id:
-              createProductDto.category_id !== undefined
-                ? BigInt(
-                    createProductDto.category_id,
-                  )
-                : undefined,
+          category_id:
+            createProductDto.category_id !== undefined
+              ? BigInt(createProductDto.category_id)
+              : undefined,
 
-            supplier_id:
-              createProductDto.supplier_id !== undefined
-                ? BigInt(
-                    createProductDto.supplier_id,
-                  )
-                : undefined,
+          supplier_id:
+            createProductDto.supplier_id !== undefined
+              ? BigInt(createProductDto.supplier_id)
+              : undefined,
 
-            brand_id:
-              createProductDto.brand_id !== undefined
-                ? BigInt(
-                    createProductDto.brand_id,
-                  )
-                : undefined,
+          brand_id:
+            createProductDto.brand_id !== undefined
+              ? BigInt(createProductDto.brand_id)
+              : undefined,
 
-            department_id:
-              createProductDto.department_id !== undefined
-                ? BigInt(
-                    createProductDto.department_id,
-                  )
-                : undefined,
+          department_id:
+            createProductDto.department_id !== undefined
+              ? BigInt(createProductDto.department_id)
+              : undefined,
 
-            created_at: new Date(),
-            updated_at: new Date(),
-          } as any,
+          created_at: new Date(),
+          updated_at: new Date(),
+        } as any,
 
-          include: {
-            categories: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-
-            suppliers: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-
-            brands: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-
-            departments: {
-              select: {
-                id: true,
-                name: true,
-              },
+        include: {
+          categories: {
+            select: {
+              id: true,
+              name: true,
             },
           },
-        });
 
-        // AUDIT LOG
-        await this.productAuditService.log({
+          suppliers: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+
+          brands: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+
+          departments: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      // AUDIT LOG
+      await this.productAuditService.log(
+        {
           product_id: Number(product.id),
           action: 'CREATE',
           description: `Product "${product.name}" created.`,
           new_data: this.serialize(product),
           performed_by: null,
-        }, tx);
+        },
+        tx,
+      );
 
-        return product;
-      });
+      return product;
+    });
 
     return {
       success: true,
-      message:
-        'Product created successfully.',
+      message: 'Product created successfully.',
       data: this.serialize(data),
     };
   }
@@ -808,103 +767,81 @@ export class ProductsService {
   // ==========================
   // UPDATE PRODUCT
   // ==========================
-  async update(
-    id: number,
-    updateProductDto: UpdateProductDto,
-  ) {
+  async update(id: number, updateProductDto: UpdateProductDto) {
     const validId = this.validateAndConvertToBigInt(id);
 
     // Validate stock values
     this.validateStockValues(
       updateProductDto.minimum_stock,
-      updateProductDto.maximum_stock
+      updateProductDto.maximum_stock,
     );
 
     // FIND PRODUCT
-    const existing =
-      await this.prisma.products.findFirst({
+    const existing = await this.prisma.products.findFirst({
+      where: {
+        id: validId,
+        deleted_at: null,
+      },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Product not found.');
+    }
+
+    // SKU VALIDATION
+    if (updateProductDto.sku && updateProductDto.sku !== existing.sku) {
+      const duplicate = await this.prisma.products.findFirst({
         where: {
-          id: validId,
+          sku: updateProductDto.sku,
+          id: {
+            not: validId,
+          },
           deleted_at: null,
         },
       });
 
-    if (!existing) {
-      throw new NotFoundException(
-        'Product not found.',
-      );
-    }
-
-    // SKU VALIDATION
-    if (
-      updateProductDto.sku &&
-      updateProductDto.sku !== existing.sku
-    ) {
-      const duplicate =
-        await this.prisma.products.findFirst({
-          where: {
-            sku: updateProductDto.sku,
-            id: {
-              not: validId,
-            },
-            deleted_at: null,
-          },
-        });
-
       if (duplicate) {
-        throw new ConflictException(
-          'SKU already exists.',
-        );
+        throw new ConflictException('SKU already exists.');
       }
     }
 
     // ITEM CODE VALIDATION
     if (
       updateProductDto.item_code &&
-      updateProductDto.item_code !==
-        existing.item_code
+      updateProductDto.item_code !== existing.item_code
     ) {
-      const duplicate =
-        await this.prisma.products.findFirst({
-          where: {
-            item_code:
-              updateProductDto.item_code,
-            id: {
-              not: validId,
-            },
-            deleted_at: null,
+      const duplicate = await this.prisma.products.findFirst({
+        where: {
+          item_code: updateProductDto.item_code,
+          id: {
+            not: validId,
           },
-        });
+          deleted_at: null,
+        },
+      });
 
       if (duplicate) {
-        throw new ConflictException(
-          'Item Code already exists.',
-        );
+        throw new ConflictException('Item Code already exists.');
       }
     }
 
     // BARCODE VALIDATION
     if (
       updateProductDto.barcode &&
-      updateProductDto.barcode !==
-        existing.barcode
+      updateProductDto.barcode !== existing.barcode
     ) {
-      const duplicate =
-        await this.prisma.products.findFirst({
-          where: {
-            barcode:
-              updateProductDto.barcode,
-            id: {
-              not: validId,
-            },
-            deleted_at: null,
+      const duplicate = await this.prisma.products.findFirst({
+        where: {
+          barcode: updateProductDto.barcode,
+          id: {
+            not: validId,
           },
-        });
+          deleted_at: null,
+        },
+      });
 
       if (duplicate) {
-        throw new ConflictException(
-          'Barcode already exists.',
-        );
+        throw new ConflictException('Barcode already exists.');
       }
     }
 
@@ -913,87 +850,60 @@ export class ProductsService {
       updateProductDto.plu_code &&
       updateProductDto.plu_code !== existing.plu_code
     ) {
-      const duplicate =
-        await this.prisma.products.findFirst({
-          where: {
-            plu_code: updateProductDto.plu_code,
-            id: {
-              not: validId,
-            },
-            deleted_at: null,
+      const duplicate = await this.prisma.products.findFirst({
+        where: {
+          plu_code: updateProductDto.plu_code,
+          id: {
+            not: validId,
           },
-        });
+          deleted_at: null,
+        },
+      });
 
       if (duplicate) {
-        throw new ConflictException(
-          'PLU Code already exists.',
-        );
+        throw new ConflictException('PLU Code already exists.');
       }
     }
 
     // CATEGORY VALIDATION
-    if (
-      updateProductDto.category_id !==
-      undefined
-    ) {
-      const category =
-        await this.prisma.categories.findFirst({
-          where: {
-            id: BigInt(
-              updateProductDto.category_id,
-            ),
-            deleted_at: null,
-          },
-        });
+    if (updateProductDto.category_id !== undefined) {
+      const category = await this.prisma.categories.findFirst({
+        where: {
+          id: BigInt(updateProductDto.category_id),
+          deleted_at: null,
+        },
+      });
 
       if (!category) {
-        throw new NotFoundException(
-          'Category not found.',
-        );
+        throw new NotFoundException('Category not found.');
       }
     }
 
     // SUPPLIER VALIDATION
-    if (
-      updateProductDto.supplier_id !==
-      undefined
-    ) {
-      const supplier =
-        await this.prisma.suppliers.findFirst({
-          where: {
-            id: BigInt(
-              updateProductDto.supplier_id,
-            ),
-            deleted_at: null,
-          },
-        });
+    if (updateProductDto.supplier_id !== undefined) {
+      const supplier = await this.prisma.suppliers.findFirst({
+        where: {
+          id: BigInt(updateProductDto.supplier_id),
+          deleted_at: null,
+        },
+      });
 
       if (!supplier) {
-        throw new NotFoundException(
-          'Supplier not found.',
-        );
+        throw new NotFoundException('Supplier not found.');
       }
     }
 
     // BRAND VALIDATION
-    if (
-      updateProductDto.brand_id !==
-      undefined
-    ) {
-      const brand =
-        await this.prisma.brands.findFirst({
-          where: {
-            id: BigInt(
-              updateProductDto.brand_id,
-            ),
-            deleted_at: null,
-          },
-        });
+    if (updateProductDto.brand_id !== undefined) {
+      const brand = await this.prisma.brands.findFirst({
+        where: {
+          id: BigInt(updateProductDto.brand_id),
+          deleted_at: null,
+        },
+      });
 
       if (!brand) {
-        throw new NotFoundException(
-          'Brand not found.',
-        );
+        throw new NotFoundException('Brand not found.');
       }
     }
 
@@ -1002,33 +912,28 @@ export class ProductsService {
       id: bigint;
       default_tax_rate: any;
     } | null = null;
-    if (
-      updateProductDto.department_id !==
-      undefined
-    ) {
-      department =
-        await this.prisma.departments.findFirst({
-          where: {
-            id: BigInt(
-              updateProductDto.department_id,
-            ),
-            deleted_at: null,
-          },
-          select: {
-            id: true,
-            default_tax_rate: true,
-          },
-        });
+    if (updateProductDto.department_id !== undefined) {
+      department = await this.prisma.departments.findFirst({
+        where: {
+          id: BigInt(updateProductDto.department_id),
+          deleted_at: null,
+        },
+        select: {
+          id: true,
+          default_tax_rate: true,
+        },
+      });
 
       if (!department) {
-        throw new NotFoundException(
-          'Department not found.',
-        );
+        throw new NotFoundException('Department not found.');
       }
     }
 
     // Apply department default tax if tax is not provided
-    if (department && (updateProductDto.tax === null || updateProductDto.tax === undefined)) {
+    if (
+      department &&
+      (updateProductDto.tax === null || updateProductDto.tax === undefined)
+    ) {
       updateProductDto.tax = department.default_tax_rate;
     }
 
@@ -1038,109 +943,98 @@ export class ProductsService {
     }
 
     // UPDATE PRODUCT
-    const product =
-      await this.prisma.$transaction(async (tx) => {
-        // Check duplicates inside transaction
-        await this.checkUniqueFields(
-          tx,
-          updateProductDto.sku,
-          updateProductDto.item_code,
-          updateProductDto.barcode,
-          validId,
-          updateProductDto.plu_code,
-        );
+    const product = await this.prisma.$transaction(async (tx) => {
+      // Check duplicates inside transaction
+      await this.checkUniqueFields(
+        tx,
+        updateProductDto.sku,
+        updateProductDto.item_code,
+        updateProductDto.barcode,
+        validId,
+        updateProductDto.plu_code,
+      );
 
-        const updated = await tx.products.update({
-          where: {
-            id: validId,
-          },
+      const updated = await tx.products.update({
+        where: {
+          id: validId,
+        },
 
-          data: {
-            ...updateProductDto,
+        data: {
+          ...updateProductDto,
 
-            category_id:
-              updateProductDto.category_id !==
-              undefined
-                ? BigInt(
-                    updateProductDto.category_id,
-                  )
-                : undefined,
+          category_id:
+            updateProductDto.category_id !== undefined
+              ? BigInt(updateProductDto.category_id)
+              : undefined,
 
-            supplier_id:
-              updateProductDto.supplier_id !==
-              undefined
-                ? BigInt(
-                    updateProductDto.supplier_id,
-                  )
-                : undefined,
+          supplier_id:
+            updateProductDto.supplier_id !== undefined
+              ? BigInt(updateProductDto.supplier_id)
+              : undefined,
 
-            brand_id:
-              updateProductDto.brand_id !==
-              undefined
-                ? BigInt(
-                    updateProductDto.brand_id,
-                  )
-                : undefined,
+          brand_id:
+            updateProductDto.brand_id !== undefined
+              ? BigInt(updateProductDto.brand_id)
+              : undefined,
 
-            department_id:
-              updateProductDto.department_id !==
-              undefined
-                ? BigInt(
-                    updateProductDto.department_id,
-                  )
-                : undefined,
+          department_id:
+            updateProductDto.department_id !== undefined
+              ? BigInt(updateProductDto.department_id)
+              : undefined,
 
-            updated_at: new Date(),
-          },
+          updated_at: new Date(),
+        },
 
-          include: {
-            categories: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-
-            suppliers: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-
-            brands: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-
-            departments: {
-              select: {
-                id: true,
-                name: true,
-              },
+        include: {
+          categories: {
+            select: {
+              id: true,
+              name: true,
             },
           },
-        });
 
-        // AUDIT LOG
-        await this.productAuditService.log({
+          suppliers: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+
+          brands: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+
+          departments: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      // AUDIT LOG
+      await this.productAuditService.log(
+        {
           product_id: Number(updated.id),
           action: 'UPDATE',
           description: `Product "${updated.name}" updated.`,
           old_data: this.serialize(existing),
           new_data: this.serialize(updated),
           performed_by: null,
-        }, tx);
+        },
+        tx,
+      );
 
-        return updated;
-      });
+      return updated;
+    });
 
     return {
       success: true,
-      message:
-        'Product updated successfully.',
+      message: 'Product updated successfully.',
       data: this.serialize(product),
     };
   }
@@ -1176,14 +1070,17 @@ export class ProductsService {
       });
 
       // Audit Log
-      await this.productAuditService.log({
-        product_id: Number(deleted.id),
-        action: 'DELETE',
-        description: `Product "${existing.name}" soft deleted.`,
-        old_data: this.serialize(existing),
-        new_data: this.serialize(deleted),
-        performed_by: null,
-      }, tx);
+      await this.productAuditService.log(
+        {
+          product_id: Number(deleted.id),
+          action: 'DELETE',
+          description: `Product "${existing.name}" soft deleted.`,
+          old_data: this.serialize(existing),
+          new_data: this.serialize(deleted),
+          performed_by: null,
+        },
+        tx,
+      );
 
       return deleted;
     });
@@ -1248,7 +1145,7 @@ export class ProductsService {
     });
 
     const categoryIds = categoryCounts
-      .map(item => item.category_id)
+      .map((item) => item.category_id)
       .filter((id): id is bigint => id !== null);
 
     if (categoryIds.length === 0) {
@@ -1271,10 +1168,12 @@ export class ProductsService {
       },
     });
 
-    const result = categories.map(category => ({
+    const result = categories.map((category) => ({
       id: category.id,
       name: category.name,
-      products: categoryCounts.find(c => c.category_id === category.id)?._count.category_id || 0,
+      products:
+        categoryCounts.find((c) => c.category_id === category.id)?._count
+          .category_id || 0,
     }));
 
     return {
@@ -1290,159 +1189,154 @@ export class ProductsService {
     const validId = this.validateAndConvertToBigInt(id);
 
     // FIND DELETED PRODUCT
-    const existing =
-      await this.prisma.products.findFirst({
-        where: {
-          id: validId,
-          deleted_at: {
-            not: null,
-          },
+    const existing = await this.prisma.products.findFirst({
+      where: {
+        id: validId,
+        deleted_at: {
+          not: null,
         },
-      });
+      },
+    });
 
     if (!existing) {
-      throw new NotFoundException(
-        'Deleted product not found.',
-      );
+      throw new NotFoundException('Deleted product not found.');
     }
 
     // SKU CONFLICT CHECK
     if (existing.sku) {
-      const duplicateSku =
-        await this.prisma.products.findFirst({
-          where: {
-            sku: existing.sku,
-            deleted_at: null,
-            id: {
-              not: validId,
-            },
+      const duplicateSku = await this.prisma.products.findFirst({
+        where: {
+          sku: existing.sku,
+          deleted_at: null,
+          id: {
+            not: validId,
           },
-        });
+        },
+      });
 
       if (duplicateSku) {
         throw new ConflictException(
-          'Cannot restore product. SKU already exists.'
+          'Cannot restore product. SKU already exists.',
         );
       }
     }
 
     // ITEM CODE CONFLICT CHECK
     if (existing.item_code) {
-      const duplicateItemCode =
-        await this.prisma.products.findFirst({
-          where: {
-            item_code: existing.item_code,
-            deleted_at: null,
-            id: {
-              not: validId,
-            },
+      const duplicateItemCode = await this.prisma.products.findFirst({
+        where: {
+          item_code: existing.item_code,
+          deleted_at: null,
+          id: {
+            not: validId,
           },
-        });
+        },
+      });
 
       if (duplicateItemCode) {
         throw new ConflictException(
-          'Cannot restore product. Item Code already exists.'
+          'Cannot restore product. Item Code already exists.',
         );
       }
     }
 
     // BARCODE CONFLICT CHECK
     if (existing.barcode) {
-      const duplicateBarcode =
-        await this.prisma.products.findFirst({
-          where: {
-            barcode: existing.barcode,
-            deleted_at: null,
-            id: {
-              not: validId,
-            },
+      const duplicateBarcode = await this.prisma.products.findFirst({
+        where: {
+          barcode: existing.barcode,
+          deleted_at: null,
+          id: {
+            not: validId,
           },
-        });
+        },
+      });
 
       if (duplicateBarcode) {
         throw new ConflictException(
-          'Cannot restore product. Barcode already exists.'
+          'Cannot restore product. Barcode already exists.',
         );
       }
     }
 
     // PLU CODE CONFLICT CHECK
     if (existing.plu_code) {
-      const duplicatePlu =
-        await this.prisma.products.findFirst({
-          where: {
-            plu_code: existing.plu_code,
-            deleted_at: null,
-            id: {
-              not: validId,
-            },
+      const duplicatePlu = await this.prisma.products.findFirst({
+        where: {
+          plu_code: existing.plu_code,
+          deleted_at: null,
+          id: {
+            not: validId,
           },
-        });
+        },
+      });
 
       if (duplicatePlu) {
         throw new ConflictException(
-          'Cannot restore product. PLU Code already exists.'
+          'Cannot restore product. PLU Code already exists.',
         );
       }
     }
 
     // RESTORE PRODUCT
-    const product =
-      await this.prisma.$transaction(async (tx) => {
-        const restored = await tx.products.update({
-          where: {
-            id: validId,
-          },
+    const product = await this.prisma.$transaction(async (tx) => {
+      const restored = await tx.products.update({
+        where: {
+          id: validId,
+        },
 
-          data: {
-            deleted_at: null,
-            status: 'Active',
-            updated_at: new Date(),
-          },
+        data: {
+          deleted_at: null,
+          status: 'Active',
+          updated_at: new Date(),
+        },
 
-          include: {
-            categories: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-
-            suppliers: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-
-            brands: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-
-            departments: {
-              select: {
-                id: true,
-                name: true,
-              },
+        include: {
+          categories: {
+            select: {
+              id: true,
+              name: true,
             },
           },
-        });
 
-        // AUDIT LOG
-        await this.productAuditService.log({
+          suppliers: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+
+          brands: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+
+          departments: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      // AUDIT LOG
+      await this.productAuditService.log(
+        {
           product_id: Number(restored.id),
           action: 'RESTORE',
           description: `Product "${restored.name}" restored.`,
           old_data: this.serialize(existing),
           new_data: this.serialize(restored),
           performed_by: null,
-        }, tx);
+        },
+        tx,
+      );
 
-        return restored;
-      });
+      return restored;
+    });
 
     return {
       success: true,
@@ -1450,33 +1344,31 @@ export class ProductsService {
       data: this.serialize(product),
     };
   }
-async findByBarcode(barcode: string) {
-  const product = await this.prisma.products.findFirst({
-    where: {
-      barcode,
-      deleted_at: null,
-    },
+  async findByBarcode(barcode: string) {
+    const product = await this.prisma.products.findFirst({
+      where: {
+        barcode,
+        deleted_at: null,
+      },
 
-    include: {
-      categories: true,
-      suppliers: true,
-      brands: true,
-      departments: true,
-      inventories: true,
-    },
-  });
+      include: {
+        categories: true,
+        suppliers: true,
+        brands: true,
+        departments: true,
+        inventories: true,
+      },
+    });
 
-  if (!product) {
-    throw new NotFoundException(
-      'Product not found.',
-    );
+    if (!product) {
+      throw new NotFoundException('Product not found.');
+    }
+
+    return {
+      success: true,
+      data: this.serialize(product),
+    };
   }
-
-  return {
-    success: true,
-    data: this.serialize(product),
-  };
-}
   // ==========================
   // PRODUCT HISTORY
   // ==========================
@@ -1527,7 +1419,8 @@ async findByBarcode(barcode: string) {
         if (!row.name || !row.sku || !row.barcode || !row.category_id) {
           errors.push({
             row,
-            error: 'Missing required fields: name, sku, barcode, or category_id',
+            error:
+              'Missing required fields: name, sku, barcode, or category_id',
           });
           continue;
         }
@@ -1670,7 +1563,7 @@ async findByBarcode(barcode: string) {
               id: BigInt(row.department_id),
               deleted_at: null,
             },
-            select: { 
+            select: {
               id: true,
               default_tax_rate: true,
             },
@@ -1693,7 +1586,11 @@ async findByBarcode(barcode: string) {
         const maxStock = this.safeParseInt(row.maximum_stock);
 
         // Validate numeric fields
-        if (row.retail_price !== undefined && row.retail_price !== '' && retailPrice === null) {
+        if (
+          row.retail_price !== undefined &&
+          row.retail_price !== '' &&
+          retailPrice === null
+        ) {
           errors.push({
             row,
             error: `Invalid retail_price: "${row.retail_price}" is not a valid number`,
@@ -1717,7 +1614,11 @@ async findByBarcode(barcode: string) {
           continue;
         }
 
-        if (row.minimum_stock !== undefined && row.minimum_stock !== '' && minStock === null) {
+        if (
+          row.minimum_stock !== undefined &&
+          row.minimum_stock !== '' &&
+          minStock === null
+        ) {
           errors.push({
             row,
             error: `Invalid minimum_stock: "${row.minimum_stock}" is not a valid integer`,
@@ -1725,7 +1626,11 @@ async findByBarcode(barcode: string) {
           continue;
         }
 
-        if (row.maximum_stock !== undefined && row.maximum_stock !== '' && maxStock === null) {
+        if (
+          row.maximum_stock !== undefined &&
+          row.maximum_stock !== '' &&
+          maxStock === null
+        ) {
           errors.push({
             row,
             error: `Invalid maximum_stock: "${row.maximum_stock}" is not a valid integer`,
@@ -1743,7 +1648,10 @@ async findByBarcode(barcode: string) {
         }
 
         // Apply department defaults if department exists and tax not provided
-        if (department && (row.tax === null || row.tax === undefined || row.tax === '')) {
+        if (
+          department &&
+          (row.tax === null || row.tax === undefined || row.tax === '')
+        ) {
           taxValue = department.default_tax_rate;
         }
 
@@ -1800,7 +1708,9 @@ async findByBarcode(barcode: string) {
               category_id: BigInt(row.category_id),
               supplier_id: row.supplier_id ? BigInt(row.supplier_id) : null,
               brand_id: row.brand_id ? BigInt(row.brand_id) : null,
-              department_id: row.department_id ? BigInt(row.department_id) : null,
+              department_id: row.department_id
+                ? BigInt(row.department_id)
+                : null,
               created_at: new Date(),
               updated_at: new Date(),
             } as any,
@@ -1837,13 +1747,16 @@ async findByBarcode(barcode: string) {
           });
 
           // Audit Log
-          await this.productAuditService.log({
-            product_id: Number(created.id),
-            action: 'CREATE',
-            description: `Product "${created.name}" imported via CSV.`,
-            new_data: this.serialize(created),
-            performed_by: null,
-          }, tx);
+          await this.productAuditService.log(
+            {
+              product_id: Number(created.id),
+              action: 'CREATE',
+              description: `Product "${created.name}" imported via CSV.`,
+              new_data: this.serialize(created),
+              performed_by: null,
+            },
+            tx,
+          );
 
           return created;
         });

@@ -77,13 +77,17 @@ const getTransporter = () => {
 
 export const sendEmail = async (to: string, subject: string, html: string) => {
   if (!process.env.BREVO_SMTP_USER || !process.env.BREVO_SMTP_KEY) {
-    console.warn('Email not sent — BREVO_SMTP_USER/BREVO_SMTP_KEY not configured');
+    console.warn(
+      'Email not sent — BREVO_SMTP_USER/BREVO_SMTP_KEY not configured',
+    );
     return;
   }
   try {
     await getTransporter().sendMail({
       // Must be an email address verified in Brevo (Brevo → Senders & IP → Senders)
-      from: process.env.EMAIL_FROM || 'White Label Backoffice <noreply@devisgon.com>',
+      from:
+        process.env.EMAIL_FROM ||
+        'White Label Backoffice <noreply@devisgon.com>',
       to,
       subject,
       html,

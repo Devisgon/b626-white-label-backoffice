@@ -9,7 +9,9 @@ export class CreatePriceBookDto {
   @MaxLength(255)
   name!: string;
 
-  @ApiPropertyOptional({ example: 'Special selling prices for the Ramadan campaign' })
+  @ApiPropertyOptional({
+    example: 'Special selling prices for the Ramadan campaign',
+  })
   @IsOptional()
   @IsString()
   description?: string;

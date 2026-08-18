@@ -15,7 +15,7 @@ import { withTenantScoping } from './tenant-scoping.extension';
         // `PrismaService` instance, but every consumer only calls methods
         // PrismaClient already has (findMany, create, $transaction, ...),
         // so this is safe — see PrismaService's own comment.
-        return withTenantScoping(client) as unknown as PrismaService;
+        return withTenantScoping(client);
       },
     },
   ],

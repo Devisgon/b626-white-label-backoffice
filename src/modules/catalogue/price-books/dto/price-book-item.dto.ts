@@ -9,7 +9,10 @@ export class AddPriceBookItemDto {
   @IsPositive()
   product_id!: number;
 
-  @ApiProperty({ example: 1.49, description: 'Selling price for this product in the price book' })
+  @ApiProperty({
+    example: 1.49,
+    description: 'Selling price for this product in the price book',
+  })
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)

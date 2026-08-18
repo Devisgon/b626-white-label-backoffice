@@ -1,7 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { ApiOperation, ApiTags,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiOperation, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { CatalogueService } from './catalogue.service';
 
 @ApiTags('Catalogue')

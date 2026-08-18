@@ -75,9 +75,7 @@ export class BrandsService {
       'updated_at',
     ];
 
-    const validSort = allowedSortFields.includes(sortBy)
-      ? sortBy
-      : 'id';
+    const validSort = allowedSortFields.includes(sortBy) ? sortBy : 'id';
 
     // Cursor Pagination
     if (cursor) {
@@ -104,9 +102,7 @@ export class BrandsService {
         pagination: {
           type: 'cursor',
           limit,
-          nextCursor: hasMore
-            ? Number(data[data.length - 1].id)
-            : null,
+          nextCursor: hasMore ? Number(data[data.length - 1].id) : null,
           hasMore,
         },
         data: this.serialize(data),
@@ -199,10 +195,7 @@ export class BrandsService {
   // ==========================
   // UPDATE BRAND
   // ==========================
-  async update(
-    id: number,
-    updateBrandDto: UpdateBrandDto,
-  ) {
+  async update(id: number, updateBrandDto: UpdateBrandDto) {
     const existing = await this.prisma.brands.findFirst({
       where: {
         id: BigInt(id),
@@ -214,10 +207,7 @@ export class BrandsService {
       throw new NotFoundException('Brand not found.');
     }
 
-    if (
-      updateBrandDto.name &&
-      updateBrandDto.name !== existing.name
-    ) {
+    if (updateBrandDto.name && updateBrandDto.name !== existing.name) {
       const duplicate = await this.prisma.brands.findFirst({
         where: {
           name: updateBrandDto.name,
@@ -297,9 +287,7 @@ export class BrandsService {
     });
 
     if (!existing) {
-      throw new NotFoundException(
-        'Deleted brand not found.',
-      );
+      throw new NotFoundException('Deleted brand not found.');
     }
 
     const brand = await this.prisma.brands.update({

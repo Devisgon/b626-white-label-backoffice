@@ -9,14 +9,22 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags,
+import {
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
   ApiBearerAuth,
 } from '@nestjs/swagger';
 
 import { PriceBooksService } from './price-books.service';
 import { CreatePriceBookDto } from './dto/create-price-book.dto';
 import { UpdatePriceBookDto } from './dto/update-price-book.dto';
-import { AddPriceBookItemDto, UpdatePriceBookItemDto } from './dto/price-book-item.dto';
+import {
+  AddPriceBookItemDto,
+  UpdatePriceBookItemDto,
+} from './dto/price-book-item.dto';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { Role } from '../../auth/enums/role.enum';
 
@@ -65,7 +73,10 @@ export class PriceBooksController {
 
   @Post()
   @ApiOperation({ summary: 'Create a price book' })
-  @ApiResponse({ status: 409, description: 'A price book with this name already exists.' })
+  @ApiResponse({
+    status: 409,
+    description: 'A price book with this name already exists.',
+  })
   create(@Body() dto: CreatePriceBookDto) {
     return this.priceBooksService.create(dto);
   }
@@ -73,7 +84,10 @@ export class PriceBooksController {
   @Patch(':id')
   @ApiOperation({ summary: 'Update a price book' })
   @ApiParam({ name: 'id', example: 1 })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdatePriceBookDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdatePriceBookDto,
+  ) {
     return this.priceBooksService.update(id, dto);
   }
 
@@ -90,8 +104,14 @@ export class PriceBooksController {
   @Post(':id/items')
   @ApiOperation({ summary: 'Add a product price to a price book' })
   @ApiParam({ name: 'id', description: 'Price book ID', example: 1 })
-  @ApiResponse({ status: 409, description: 'Product already has a price in this price book.' })
-  addItem(@Param('id', ParseIntPipe) id: number, @Body() dto: AddPriceBookItemDto) {
+  @ApiResponse({
+    status: 409,
+    description: 'Product already has a price in this price book.',
+  })
+  addItem(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AddPriceBookItemDto,
+  ) {
     return this.priceBooksService.addItem(id, dto);
   }
 

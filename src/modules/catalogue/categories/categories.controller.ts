@@ -27,9 +27,7 @@ import { Role } from '../../auth/enums/role.enum';
 @ApiBearerAuth('accessToken')
 @Controller('catalogue/categories')
 export class CategoriesController {
-  constructor(
-    private readonly categoriesService: CategoriesService,
-  ) {}
+  constructor(private readonly categoriesService: CategoriesService) {}
 
   // ==========================
   // CATEGORY STATISTICS
@@ -51,45 +49,38 @@ export class CategoriesController {
   @ApiOperation({
     summary: 'Get all categories',
   })
-
   @ApiQuery({
     name: 'search',
     required: false,
     description: 'Search by category name or description',
   })
-
   @ApiQuery({
     name: 'status',
     required: false,
     description: 'Filter by category status',
   })
-
   @ApiQuery({
     name: 'page',
     required: false,
     example: 1,
     description: 'Offset pagination',
   })
-
   @ApiQuery({
     name: 'cursor',
     required: false,
     example: 10,
     description: 'Cursor pagination',
   })
-
   @ApiQuery({
     name: 'limit',
     required: false,
     example: 10,
   })
-
   @ApiQuery({
     name: 'sortBy',
     required: false,
     example: 'name',
   })
-
   @ApiQuery({
     name: 'order',
     required: false,
@@ -123,9 +114,7 @@ export class CategoriesController {
     summary: 'Get category by ID',
   })
   findOne(@Param('id') id: string) {
-    return this.categoriesService.findOne(
-      Number(id),
-    );
+    return this.categoriesService.findOne(Number(id));
   }
 
   // ==========================
@@ -139,9 +128,7 @@ export class CategoriesController {
     @Body()
     createCategoryDto: CreateCategoryDto,
   ) {
-    return this.categoriesService.create(
-      createCategoryDto,
-    );
+    return this.categoriesService.create(createCategoryDto);
   }
 
   // ==========================
@@ -156,10 +143,7 @@ export class CategoriesController {
     @Body()
     updateCategoryDto: UpdateCategoryDto,
   ) {
-    return this.categoriesService.update(
-      Number(id),
-      updateCategoryDto,
-    );
+    return this.categoriesService.update(Number(id), updateCategoryDto);
   }
 
   // ==========================
@@ -169,12 +153,8 @@ export class CategoriesController {
   @ApiOperation({
     summary: 'Restore category',
   })
-  restore(
-    @Param('id') id: string,
-  ) {
-    return this.categoriesService.restore(
-      Number(id),
-    );
+  restore(@Param('id') id: string) {
+    return this.categoriesService.restore(Number(id));
   }
 
   // ==========================
@@ -184,11 +164,7 @@ export class CategoriesController {
   @ApiOperation({
     summary: 'Soft delete category',
   })
-  remove(
-    @Param('id') id: string,
-  ) {
-    return this.categoriesService.remove(
-      Number(id),
-    );
+  remove(@Param('id') id: string) {
+    return this.categoriesService.remove(Number(id));
   }
 }

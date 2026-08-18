@@ -31,7 +31,8 @@ async function bootstrap() {
   // set — safest default is off.
   // ---------------------------------------------------------------------
   const swaggerEnabled =
-    process.env.NODE_ENV !== 'production' || process.env.SWAGGER_ENABLED === 'true';
+    process.env.NODE_ENV !== 'production' ||
+    process.env.SWAGGER_ENABLED === 'true';
 
   if (swaggerEnabled) {
     app.use(
@@ -39,7 +40,8 @@ async function bootstrap() {
       basicAuth({
         challenge: true,
         users: {
-          [process.env.SWAGGER_USER || 'admin']: process.env.SWAGGER_PASSWORD || 'changeme',
+          [process.env.SWAGGER_USER || 'admin']:
+            process.env.SWAGGER_PASSWORD || 'changeme',
         },
       }),
     );
@@ -49,12 +51,15 @@ async function bootstrap() {
       .setDescription(
         'Merged multi-tenant backoffice API — Auth, Product Catalogue and ' +
           'Banking modules, all behind a single JWT bearer token. Every ' +
-          'catalogue/banking request is scoped to the caller\'s tenant ' +
+          "catalogue/banking request is scoped to the caller's tenant " +
           '(and active store, where relevant) from the token — there are ' +
           'no more x-tenant-id / x-location-id headers.',
       )
       .setVersion('1.0.0')
-      .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'accessToken')
+      .addBearerAuth(
+        { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+        'accessToken',
+      )
       .build();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api-docs', app, document);

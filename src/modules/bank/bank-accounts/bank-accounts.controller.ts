@@ -9,7 +9,12 @@ import {
   Query,
   ParseUUIDPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiSecurity, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { BankAccountsService } from './bank-accounts.service';
 import { CreateBankAccountDto } from './dto/create-bank-account.dto';
 import { UpdateBankAccountDto } from './dto/update-bank-account.dto';
@@ -19,11 +24,12 @@ import type { RequestContext } from '../../../common/interfaces/request-context.
 import { StatementQueryDto } from './dto/statement-query.dto';
 import { RequireLocation } from '../../../common/decorators/require-location.decorator';
 import { Roles } from '../../../common/decorators/roles.decorator';
-import { Role } from '../../auth/enums/role.enum';
+import { Role } from '../../../modules/auth/enums/role.enum';
 
 @ApiTags('Bank Accounts')
 @Roles(Role.OWNER_ADMIN, Role.FINANCE_USER)
 @RequireLocation()
+@ApiBearerAuth('accessToken')
 @Controller('bank/accounts')
 export class BankAccountsController {
   constructor(private readonly service: BankAccountsService) {}

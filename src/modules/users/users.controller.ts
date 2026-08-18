@@ -26,7 +26,10 @@ export class UsersController {
 
   @Patch(':id/deactivate')
   @ApiOperation({ summary: 'Deactivate a user account (Owner/Admin only)' })
-  deactivate(@CurrentUser('tenantId') tenantId: string, @Param('id') id: string) {
+  deactivate(
+    @CurrentUser('tenantId') tenantId: string,
+    @Param('id') id: string,
+  ) {
     return this.authService.setUserActive(tenantId, id, false);
   }
 

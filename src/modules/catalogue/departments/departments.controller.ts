@@ -27,9 +27,7 @@ import { Role } from '../../auth/enums/role.enum';
 @ApiBearerAuth('accessToken')
 @Controller('catalogue/departments')
 export class DepartmentsController {
-  constructor(
-    private readonly departmentsService: DepartmentsService,
-  ) {}
+  constructor(private readonly departmentsService: DepartmentsService) {}
 
   // ==========================
   // DEPARTMENT STATISTICS
@@ -49,43 +47,36 @@ export class DepartmentsController {
   @ApiOperation({
     summary: 'Get all departments',
   })
-
   @ApiQuery({
     name: 'search',
     required: false,
     description: 'Search by name or description',
   })
-
   @ApiQuery({
     name: 'status',
     required: false,
     description: 'Filter by status',
   })
-
   @ApiQuery({
     name: 'page',
     required: false,
     example: 1,
   })
-
   @ApiQuery({
     name: 'cursor',
     required: false,
     example: 10,
   })
-
   @ApiQuery({
     name: 'limit',
     required: false,
     example: 10,
   })
-
   @ApiQuery({
     name: 'sortBy',
     required: false,
     example: 'name',
   })
-
   @ApiQuery({
     name: 'order',
     required: false,
@@ -133,9 +124,7 @@ export class DepartmentsController {
     @Body()
     createDepartmentDto: CreateDepartmentDto,
   ) {
-    return this.departmentsService.create(
-      createDepartmentDto,
-    );
+    return this.departmentsService.create(createDepartmentDto);
   }
 
   // ==========================
@@ -150,10 +139,7 @@ export class DepartmentsController {
     @Body()
     updateDepartmentDto: UpdateDepartmentDto,
   ) {
-    return this.departmentsService.update(
-      Number(id),
-      updateDepartmentDto,
-    );
+    return this.departmentsService.update(Number(id), updateDepartmentDto);
   }
 
   // ==========================
@@ -164,9 +150,7 @@ export class DepartmentsController {
     summary: 'Restore department',
   })
   restore(@Param('id') id: string) {
-    return this.departmentsService.restore(
-      Number(id),
-    );
+    return this.departmentsService.restore(Number(id));
   }
 
   // ==========================
@@ -177,8 +161,6 @@ export class DepartmentsController {
     summary: 'Soft delete department',
   })
   remove(@Param('id') id: string) {
-    return this.departmentsService.remove(
-      Number(id),
-    );
+    return this.departmentsService.remove(Number(id));
   }
 }

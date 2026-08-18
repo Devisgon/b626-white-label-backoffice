@@ -18,7 +18,9 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
  */
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
-  constructor(@InjectPinoLogger(LoggingInterceptor.name) private logger: PinoLogger) {
+  constructor(
+    @InjectPinoLogger(LoggingInterceptor.name) private logger: PinoLogger,
+  ) {
     this.logger.setContext(LoggingInterceptor.name);
   }
 

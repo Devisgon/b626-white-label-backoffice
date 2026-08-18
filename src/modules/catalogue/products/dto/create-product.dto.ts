@@ -26,25 +26,37 @@ export class CreateProductDto {
   @MaxLength(255)
   name!: string;
 
-  @ApiPropertyOptional({ example: 'COKE-500', description: 'Stock Keeping Unit, must be unique' })
+  @ApiPropertyOptional({
+    example: 'COKE-500',
+    description: 'Stock Keeping Unit, must be unique',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   sku?: string;
 
-  @ApiPropertyOptional({ example: 'ITEM-00123', description: 'Internal item code, must be unique' })
+  @ApiPropertyOptional({
+    example: 'ITEM-00123',
+    description: 'Internal item code, must be unique',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   item_code?: string;
 
-  @ApiPropertyOptional({ example: '5901234123457', description: 'Barcode (EAN/UPC), must be unique' })
+  @ApiPropertyOptional({
+    example: '5901234123457',
+    description: 'Barcode (EAN/UPC), must be unique',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   barcode?: string;
 
-  @ApiPropertyOptional({ example: '1234', description: 'Price Look-Up code, must be unique' })
+  @ApiPropertyOptional({
+    example: '1234',
+    description: 'Price Look-Up code, must be unique',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(50)
@@ -61,7 +73,10 @@ export class CreateProductDto {
   @Min(0)
   retail_price?: number;
 
-  @ApiPropertyOptional({ example: 1.49, description: 'Wholesale selling price' })
+  @ApiPropertyOptional({
+    example: 1.49,
+    description: 'Wholesale selling price',
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
@@ -75,7 +90,11 @@ export class CreateProductDto {
   @Min(0)
   cost?: number;
 
-  @ApiPropertyOptional({ example: 5, description: 'Tax rate percentage (0-100). Defaults to department default_tax_rate when omitted.' })
+  @ApiPropertyOptional({
+    example: 5,
+    description:
+      'Tax rate percentage (0-100). Defaults to department default_tax_rate when omitted.',
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
@@ -113,12 +132,19 @@ export class CreateProductDto {
   // MULTI-PACK / CARTON
   // ==========================
 
-  @ApiPropertyOptional({ example: false, description: 'Whether this product is sold as a multi-pack' })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Whether this product is sold as a multi-pack',
+  })
   @IsOptional()
   @IsBoolean()
   is_multi_pack?: boolean;
 
-  @ApiPropertyOptional({ example: 6, description: 'Number of units per pack (required when is_multi_pack is true)' })
+  @ApiPropertyOptional({
+    example: 6,
+    description:
+      'Number of units per pack (required when is_multi_pack is true)',
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -167,7 +193,11 @@ export class CreateProductDto {
   // INVENTORY SETTINGS
   // ==========================
 
-  @ApiPropertyOptional({ example: true, description: 'Whether stock is tracked for this product', default: true })
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Whether stock is tracked for this product',
+    default: true,
+  })
   @IsOptional()
   @IsBoolean()
   inventory_tracking?: boolean;
@@ -190,7 +220,11 @@ export class CreateProductDto {
   // STATUS
   // ==========================
 
-  @ApiPropertyOptional({ enum: PRODUCT_STATUSES, example: 'Active', default: 'Active' })
+  @ApiPropertyOptional({
+    enum: PRODUCT_STATUSES,
+    example: 'Active',
+    default: 'Active',
+  })
   @IsOptional()
   @IsIn(PRODUCT_STATUSES)
   status?: string;

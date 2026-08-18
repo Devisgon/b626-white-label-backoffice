@@ -1,52 +1,34 @@
-import {
-  ApiProperty,
-  ApiPropertyOptional,
-} from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import {
-  IsOptional,
-  IsString,
-} from 'class-validator';
-
-
+import { IsOptional, IsString } from 'class-validator';
 
 export class CreateInventoryLocationDto {
-
-
   @ApiProperty({
-    example:'Main Warehouse',
-    description:'Inventory location name',
+    example: 'Main Warehouse',
+    description: 'Inventory location name',
   })
   @IsString()
-  name:string;
-
-
+  name: string;
 
   @ApiProperty({
-    example:'WH-001',
-    description:'Unique warehouse code',
+    example: 'WH-001',
+    description: 'Unique warehouse code',
   })
   @IsString()
-  code:string;
-
-
+  code: string;
 
   @ApiPropertyOptional({
-    example:'Sahiwal Main Branch',
+    example: 'Sahiwal Main Branch',
   })
   @IsOptional()
   @IsString()
-  address?:string;
-
-
+  address?: string;
 
   @ApiPropertyOptional({
-    example:'Active',
-    default:'Active',
+    example: 'Active',
+    default: 'Active',
   })
   @IsOptional()
   @IsString()
-  status?:string;
-
-
+  status?: string;
 }

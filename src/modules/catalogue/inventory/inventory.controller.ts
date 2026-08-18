@@ -26,67 +26,49 @@ import { RequireLocation } from '../../../common/decorators/require-location.dec
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { Role } from '../../auth/enums/role.enum';
 
-
-
 @ApiTags('Catalogue - Inventory')
 @Roles(Role.OWNER_ADMIN, Role.STORE_MANAGER, Role.INVENTORY_USER)
 @RequireLocation()
 @ApiBearerAuth('accessToken')
 @Controller('catalogue/inventory')
 export class InventoryController {
-
-
-  constructor(
-    private readonly inventoryService: InventoryService,
-  ) {}
-
-
+  constructor(private readonly inventoryService: InventoryService) {}
 
   @Post()
   @ApiOperation({
     summary: 'Create inventory record',
   })
   @ApiResponse({
-    status:201,
-    description:'Inventory created successfully',
+    status: 201,
+    description: 'Inventory created successfully',
   })
   create(
     @Body()
     createInventoryDto: CreateInventoryDto,
-  ){
-
-    return this.inventoryService.create(
-      createInventoryDto,
-    );
-
+  ) {
+    return this.inventoryService.create(createInventoryDto);
   }
-
-
-
-
-
 
   @Get()
   @ApiOperation({
-    summary:'Get all inventory records',
+    summary: 'Get all inventory records',
   })
   @ApiQuery({
-    name:'page',
-    required:false,
-    example:1,
+    name: 'page',
+    required: false,
+    example: 1,
   })
   @ApiQuery({
-    name:'limit',
-    required:false,
-    example:10,
+    name: 'limit',
+    required: false,
+    example: 10,
   })
   @ApiQuery({
-    name:'search',
-    required:false,
-    example:'Warehouse',
+    name: 'search',
+    required: false,
+    example: 'Warehouse',
   })
   findAll(
-
     @Query('page')
     page?: number,
 
@@ -95,153 +77,72 @@ export class InventoryController {
 
     @Query('search')
     search?: string,
-
-  ){
-
-
+  ) {
     return this.inventoryService.findAll(
-
       page ? Number(page) : 1,
 
       limit ? Number(limit) : 10,
 
       search,
-
     );
-
-
   }
-
-
-
-
-
 
   @Get('stats')
   @ApiOperation({
-    summary:'Inventory statistics',
+    summary: 'Inventory statistics',
   })
-  getStats(){
-
+  getStats() {
     return this.inventoryService.getStats();
-
   }
-
-
-
-
-
-
 
   @Get(':id')
   @ApiOperation({
-    summary:'Get inventory by id',
+    summary: 'Get inventory by id',
   })
   findOne(
-
-    @Param(
-      'id',
-      ParseIntPipe,
-    )
-    id:number,
-
-  ){
-
-    return this.inventoryService.findOne(
-      id,
-    );
-
+    @Param('id', ParseIntPipe)
+    id: number,
+  ) {
+    return this.inventoryService.findOne(id);
   }
-
-
-
-
-
-
 
   @Patch(':id')
   @ApiOperation({
-    summary:'Update inventory',
+    summary: 'Update inventory',
   })
   update(
-
-    @Param(
-      'id',
-      ParseIntPipe,
-    )
-    id:number,
-
+    @Param('id', ParseIntPipe)
+    id: number,
 
     @Body()
-    updateInventoryDto:UpdateInventoryDto,
-
-  ){
-
-
+    updateInventoryDto: UpdateInventoryDto,
+  ) {
     return this.inventoryService.update(
-
       id,
 
       updateInventoryDto,
-
     );
-
-
   }
-
-
-
-
-
-
-
 
   @Delete(':id')
   @ApiOperation({
-    summary:'Soft delete inventory',
+    summary: 'Soft delete inventory',
   })
   remove(
-
-    @Param(
-      'id',
-      ParseIntPipe,
-    )
-    id:number,
-
-  ){
-
-    return this.inventoryService.remove(
-      id,
-    );
-
+    @Param('id', ParseIntPipe)
+    id: number,
+  ) {
+    return this.inventoryService.remove(id);
   }
-
-
-
-
-
-
 
   @Patch(':id/restore')
   @ApiOperation({
-    summary:'Restore deleted inventory',
+    summary: 'Restore deleted inventory',
   })
   restore(
-
-    @Param(
-      'id',
-      ParseIntPipe,
-    )
-    id:number,
-
-  ){
-
-    return this.inventoryService.restore(
-      id,
-    );
-
+    @Param('id', ParseIntPipe)
+    id: number,
+  ) {
+    return this.inventoryService.restore(id);
   }
-
-
-
 }

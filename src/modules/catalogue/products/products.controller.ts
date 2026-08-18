@@ -41,8 +41,13 @@ export class ProductsController {
   // PRODUCT STATISTICS
   // ===========================
   @Get('stats')
-  @ApiOperation({ summary: 'Get product statistics (total / active / inactive)' })
-  @ApiResponse({ status: 200, description: 'Statistics returned successfully.' })
+  @ApiOperation({
+    summary: 'Get product statistics (total / active / inactive)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Statistics returned successfully.',
+  })
   getStats() {
     return this.productsService.getStats();
   }
@@ -52,7 +57,10 @@ export class ProductsController {
   // ===========================
   @Get('category-summary')
   @ApiOperation({ summary: 'Get product count grouped by category' })
-  @ApiResponse({ status: 200, description: 'Category summary returned successfully.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Category summary returned successfully.',
+  })
   getCategorySummary() {
     return this.productsService.getCategorySummary();
   }
@@ -75,7 +83,10 @@ export class ProductsController {
   @Get(':id/history')
   @ApiOperation({ summary: 'Get the audit-log history of a product' })
   @ApiParam({ name: 'id', description: 'Product ID', example: 1 })
-  @ApiResponse({ status: 200, description: 'Product history returned successfully.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Product history returned successfully.',
+  })
   getProductHistory(@Param('id', ParseIntPipe) id: number) {
     return this.productsService.getProductHistory(id);
   }
@@ -85,7 +96,9 @@ export class ProductsController {
   // Supports offset pagination (?page=) and cursor pagination (?cursor=)
   // ===========================
   @Get()
-  @ApiOperation({ summary: 'List products with search, filters, sorting and pagination' })
+  @ApiOperation({
+    summary: 'List products with search, filters, sorting and pagination',
+  })
   @ApiResponse({ status: 200, description: 'Products returned successfully.' })
   findAll(@Query() query: FindProductsQueryDto) {
     return this.productsService.findAll(
@@ -125,7 +138,10 @@ export class ProductsController {
       },
     },
   })
-  @ApiResponse({ status: 201, description: 'CSV processed; created/errors summary returned.' })
+  @ApiResponse({
+    status: 201,
+    description: 'CSV processed; created/errors summary returned.',
+  })
   importProducts(@UploadedFile() file: Express.Multer.File) {
     return this.productsService.importProducts(file);
   }
@@ -136,7 +152,10 @@ export class ProductsController {
   @Post()
   @ApiOperation({ summary: 'Create a new product' })
   @ApiResponse({ status: 201, description: 'Product created successfully.' })
-  @ApiResponse({ status: 409, description: 'SKU, Barcode, Item Code or PLU Code already exists.' })
+  @ApiResponse({
+    status: 409,
+    description: 'SKU, Barcode, Item Code or PLU Code already exists.',
+  })
   create(@Body() createProductDto: CreateProductDto) {
     return this.productsService.create(createProductDto);
   }
@@ -161,7 +180,10 @@ export class ProductsController {
   @ApiParam({ name: 'id', description: 'Product ID', example: 1 })
   @ApiResponse({ status: 200, description: 'Product updated successfully.' })
   @ApiResponse({ status: 404, description: 'Product not found.' })
-  @ApiResponse({ status: 409, description: 'SKU, Barcode, Item Code or PLU Code already exists.' })
+  @ApiResponse({
+    status: 409,
+    description: 'SKU, Barcode, Item Code or PLU Code already exists.',
+  })
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateProductDto: UpdateProductDto,
@@ -177,7 +199,10 @@ export class ProductsController {
   @ApiParam({ name: 'id', description: 'Product ID', example: 1 })
   @ApiResponse({ status: 200, description: 'Product restored successfully.' })
   @ApiResponse({ status: 404, description: 'Deleted product not found.' })
-  @ApiResponse({ status: 409, description: 'SKU, Barcode, Item Code or PLU Code already exists.' })
+  @ApiResponse({
+    status: 409,
+    description: 'SKU, Barcode, Item Code or PLU Code already exists.',
+  })
   restore(@Param('id', ParseIntPipe) id: number) {
     return this.productsService.restore(id);
   }

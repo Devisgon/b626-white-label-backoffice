@@ -33,7 +33,9 @@ export class CartonMappingsService {
   private validateId(value: any): bigint {
     const num = Number(value);
     if (!Number.isInteger(num) || num <= 0) {
-      throw new BadRequestException(`Invalid ID: ${value} must be a positive integer`);
+      throw new BadRequestException(
+        `Invalid ID: ${value} must be a positive integer`,
+      );
     }
     return BigInt(num);
   }
@@ -111,7 +113,9 @@ export class CartonMappingsService {
   // ==========================
   async create(dto: CreateCartonMappingDto) {
     if (dto.carton_product_id === dto.child_product_id) {
-      throw new BadRequestException('A product cannot be mapped as a carton of itself.');
+      throw new BadRequestException(
+        'A product cannot be mapped as a carton of itself.',
+      );
     }
 
     const cartonId = this.validateId(dto.carton_product_id);

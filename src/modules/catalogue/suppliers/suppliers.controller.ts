@@ -27,9 +27,7 @@ import { Role } from '../../auth/enums/role.enum';
 @ApiBearerAuth('accessToken')
 @Controller('catalogue/suppliers')
 export class SuppliersController {
-  constructor(
-    private readonly suppliersService: SuppliersService,
-  ) {}
+  constructor(private readonly suppliersService: SuppliersService) {}
 
   // ==========================
   // SUPPLIER STATISTICS
@@ -49,43 +47,36 @@ export class SuppliersController {
   @ApiOperation({
     summary: 'Get all suppliers',
   })
-
   @ApiQuery({
     name: 'search',
     required: false,
     description: 'Search by supplier name, email or phone',
   })
-
   @ApiQuery({
     name: 'status',
     required: false,
     description: 'Filter by supplier status',
   })
-
   @ApiQuery({
     name: 'page',
     required: false,
     example: 1,
   })
-
   @ApiQuery({
     name: 'cursor',
     required: false,
     example: 15,
   })
-
   @ApiQuery({
     name: 'limit',
     required: false,
     example: 10,
   })
-
   @ApiQuery({
     name: 'sortBy',
     required: false,
     example: 'name',
   })
-
   @ApiQuery({
     name: 'order',
     required: false,
@@ -118,12 +109,8 @@ export class SuppliersController {
   @ApiOperation({
     summary: 'Get supplier by ID',
   })
-  findOne(
-    @Param('id') id: string,
-  ) {
-    return this.suppliersService.findOne(
-      Number(id),
-    );
+  findOne(@Param('id') id: string) {
+    return this.suppliersService.findOne(Number(id));
   }
 
   // ==========================
@@ -137,9 +124,7 @@ export class SuppliersController {
     @Body()
     createSupplierDto: CreateSupplierDto,
   ) {
-    return this.suppliersService.create(
-      createSupplierDto,
-    );
+    return this.suppliersService.create(createSupplierDto);
   }
 
   // ==========================
@@ -154,10 +139,7 @@ export class SuppliersController {
     @Body()
     updateSupplierDto: UpdateSupplierDto,
   ) {
-    return this.suppliersService.update(
-      Number(id),
-      updateSupplierDto,
-    );
+    return this.suppliersService.update(Number(id), updateSupplierDto);
   }
 
   // ==========================
@@ -167,12 +149,8 @@ export class SuppliersController {
   @ApiOperation({
     summary: 'Restore supplier',
   })
-  restore(
-    @Param('id') id: string,
-  ) {
-    return this.suppliersService.restore(
-      Number(id),
-    );
+  restore(@Param('id') id: string) {
+    return this.suppliersService.restore(Number(id));
   }
 
   // ==========================
@@ -182,11 +160,7 @@ export class SuppliersController {
   @ApiOperation({
     summary: 'Soft delete supplier',
   })
-  remove(
-    @Param('id') id: string,
-  ) {
-    return this.suppliersService.remove(
-      Number(id),
-    );
+  remove(@Param('id') id: string) {
+    return this.suppliersService.remove(Number(id));
   }
 }

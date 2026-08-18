@@ -82,9 +82,7 @@ export class SuppliersService {
       'updated_at',
     ];
 
-    const validSort = allowedSortFields.includes(sortBy)
-      ? sortBy
-      : 'id';
+    const validSort = allowedSortFields.includes(sortBy) ? sortBy : 'id';
 
     // Cursor Pagination
     if (cursor) {
@@ -111,9 +109,7 @@ export class SuppliersService {
         pagination: {
           type: 'cursor',
           limit,
-          nextCursor: hasMore
-            ? Number(data[data.length - 1].id)
-            : null,
+          nextCursor: hasMore ? Number(data[data.length - 1].id) : null,
           hasMore,
         },
         data: this.serialize(data),
@@ -183,9 +179,7 @@ export class SuppliersService {
     });
 
     if (existing) {
-      throw new ConflictException(
-        'Supplier already exists.',
-      );
+      throw new ConflictException('Supplier already exists.');
     }
 
     const supplier = await this.prisma.suppliers.create({
@@ -208,10 +202,7 @@ export class SuppliersService {
   // ==========================
   // UPDATE
   // ==========================
-  async update(
-    id: number,
-    updateSupplierDto: UpdateSupplierDto,
-  ) {
+  async update(id: number, updateSupplierDto: UpdateSupplierDto) {
     const existing = await this.prisma.suppliers.findFirst({
       where: {
         id: BigInt(id),
@@ -220,30 +211,22 @@ export class SuppliersService {
     });
 
     if (!existing) {
-      throw new NotFoundException(
-        'Supplier not found.',
-      );
+      throw new NotFoundException('Supplier not found.');
     }
 
-    if (
-      updateSupplierDto.name &&
-      updateSupplierDto.name !== existing.name
-    ) {
-      const duplicate =
-        await this.prisma.suppliers.findFirst({
-          where: {
-            name: updateSupplierDto.name,
-            id: {
-              not: BigInt(id),
-            },
-            deleted_at: null,
+    if (updateSupplierDto.name && updateSupplierDto.name !== existing.name) {
+      const duplicate = await this.prisma.suppliers.findFirst({
+        where: {
+          name: updateSupplierDto.name,
+          id: {
+            not: BigInt(id),
           },
-        });
+          deleted_at: null,
+        },
+      });
 
       if (duplicate) {
-        throw new ConflictException(
-          'Supplier already exists.',
-        );
+        throw new ConflictException('Supplier already exists.');
       }
     }
 
@@ -276,9 +259,7 @@ export class SuppliersService {
     });
 
     if (!existing) {
-      throw new NotFoundException(
-        'Supplier not found.',
-      );
+      throw new NotFoundException('Supplier not found.');
     }
 
     const supplier = await this.prisma.suppliers.update({
@@ -313,9 +294,7 @@ export class SuppliersService {
     });
 
     if (!existing) {
-      throw new NotFoundException(
-        'Deleted supplier not found.',
-      );
+      throw new NotFoundException('Deleted supplier not found.');
     }
 
     const supplier = await this.prisma.suppliers.update({
@@ -340,28 +319,25 @@ export class SuppliersService {
   // STATISTICS
   // ==========================
   async getStats() {
-    const totalSuppliers =
-      await this.prisma.suppliers.count({
-        where: {
-          deleted_at: null,
-        },
-      });
+    const totalSuppliers = await this.prisma.suppliers.count({
+      where: {
+        deleted_at: null,
+      },
+    });
 
-    const activeSuppliers =
-      await this.prisma.suppliers.count({
-        where: {
-          status: 'Active',
-          deleted_at: null,
-        },
-      });
+    const activeSuppliers = await this.prisma.suppliers.count({
+      where: {
+        status: 'Active',
+        deleted_at: null,
+      },
+    });
 
-    const inactiveSuppliers =
-      await this.prisma.suppliers.count({
-        where: {
-          status: 'Inactive',
-          deleted_at: null,
-        },
-      });
+    const inactiveSuppliers = await this.prisma.suppliers.count({
+      where: {
+        status: 'Inactive',
+        deleted_at: null,
+      },
+    });
 
     return {
       success: true,

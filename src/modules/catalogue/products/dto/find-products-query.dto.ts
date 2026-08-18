@@ -22,12 +22,17 @@ export const PRODUCT_SORT_FIELDS = [
 ] as const;
 
 export class FindProductsQueryDto {
-  @ApiPropertyOptional({ description: 'Search by Name, SKU, Item Code or Barcode' })
+  @ApiPropertyOptional({
+    description: 'Search by Name, SKU, Item Code or Barcode',
+  })
   @IsOptional()
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ enum: PRODUCT_STATUSES, description: 'Filter by product status' })
+  @ApiPropertyOptional({
+    enum: PRODUCT_STATUSES,
+    description: 'Filter by product status',
+  })
   @IsOptional()
   @IsIn(PRODUCT_STATUSES)
   status?: string;
@@ -60,24 +65,35 @@ export class FindProductsQueryDto {
   @IsPositive()
   department_id?: number;
 
-  @ApiPropertyOptional({ enum: PRODUCT_SALE_TYPES, description: 'Filter by sale type' })
+  @ApiPropertyOptional({
+    enum: PRODUCT_SALE_TYPES,
+    description: 'Filter by sale type',
+  })
   @IsOptional()
   @IsIn(PRODUCT_SALE_TYPES)
   sale_type?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by inventory tracking flag (true/false)' })
+  @ApiPropertyOptional({
+    description: 'Filter by inventory tracking flag (true/false)',
+  })
   @IsOptional()
   @IsBooleanString()
   inventory_tracking?: string;
 
-  @ApiPropertyOptional({ example: 1, description: 'Offset pagination page number' })
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Offset pagination page number',
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @IsPositive()
   page?: number;
 
-  @ApiPropertyOptional({ example: 15, description: 'Cursor pagination: last seen product ID' })
+  @ApiPropertyOptional({
+    example: 15,
+    description: 'Cursor pagination: last seen product ID',
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -91,7 +107,11 @@ export class FindProductsQueryDto {
   @IsPositive()
   limit?: number = 10;
 
-  @ApiPropertyOptional({ enum: PRODUCT_SORT_FIELDS, example: 'id', default: 'id' })
+  @ApiPropertyOptional({
+    enum: PRODUCT_SORT_FIELDS,
+    example: 'id',
+    default: 'id',
+  })
   @IsOptional()
   @IsIn(PRODUCT_SORT_FIELDS)
   sortBy?: string = 'id';

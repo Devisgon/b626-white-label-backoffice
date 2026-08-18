@@ -5,10 +5,7 @@ import { ProductAuditModule } from '../product-audit/product-audit.module';
 import { PrismaModule } from '../../../prisma/prisma.module';
 
 @Module({
-  imports: [
-    ProductAuditModule,
-    PrismaModule,
-  ],
+  imports: [ProductAuditModule, PrismaModule],
   controllers: [ProductsController],
   providers: [ProductsService],
   exports: [ProductsService],
