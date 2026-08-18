@@ -309,6 +309,7 @@ model User {
   locationAccess   UserLocation[]
   permissionOverrides UserPermission[]
   payrollProfile   PayrollProfile?
+    timesheets       Timesheet[]
 
   tenant           Tenant           @relation(fields: [tenantId], references: [id])
 
@@ -324,6 +325,8 @@ model Location {
   tenant     Tenant         @relation(fields: [tenantId], references: [id])
   userAccess UserLocation[]
   moduleAccess LocationModuleAccess[]
+  timesheets   Timesheet[]
+  taxRules     TaxRule[]
 
   @@map("locations")
 }
@@ -807,6 +810,34 @@ model PayrollProfile {
   @@map("payroll_profiles")
 }
 
+enum TimesheetStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Timesheet {
+  id            String          @id @default(uuid())
+  tenantId      String
+  userId        String
+  locationId    String
+  clockIn       DateTime
+  clockOut      DateTime?
+  regularHours  Decimal?        @db.Decimal(6, 2)
+  overtimeHours Decimal?        @db.Decimal(6, 2)
+  status        TimesheetStatus @default(PENDING)
+  approvedBy    String?
+  approvedAt    DateTime?
+  notes         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location Location @relation(fields: [locationId], references: [id])
+
+  @@map("timesheets")
+}
+
 // ---------- Settings module (Day 1 slice) ----------
 model StoreProfile {
   id           String   @id @default(uuid())
@@ -822,4 +853,19 @@ model StoreProfile {
   tenant Tenant @relation(fields: [tenantId], references: [id])
 
   @@map("store_profiles")
+}
+
+model TaxRule {
+  id          String   @id @default(uuid())
+  tenantId    String
+  locationId  String?
+  name        String
+  ratePercent Decimal  @db.Decimal(5, 2)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  location Location? @relation(fields: [locationId], references: [id])
+
+  @@map("tax_rules")
 }
