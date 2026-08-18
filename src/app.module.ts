@@ -19,15 +19,13 @@ import { BankModule } from './modules/bank/bank.module';
 
 // Sales
 import { SalesModule } from './modules/sales/sales.module';
-<<<<<<< HEAD
+
 // Fuel
 import { FuelModule } from './modules/fuel/fuel.module';
 
 // Lottery
 import { LotteryModule } from './modules/lottery/lottery.module';
 
-=======
->>>>>>> hadia
 import { RequestContextMiddleware } from './common/context/request-context.middleware';
 
 
@@ -86,13 +84,11 @@ import { SendToPosModule } from './modules/send-to-pos/send-to-pos.module';
     CatalogueModule,
     BankModule,
     SalesModule,
-<<<<<<< HEAD
+
     FuelModule,
     LotteryModule,
-=======
     PosIntegrationModule,
     SendToPosModule,
->>>>>>> hadia
   ],
 
   providers: [
