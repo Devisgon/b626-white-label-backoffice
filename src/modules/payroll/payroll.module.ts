@@ -3,13 +3,12 @@ import { PayrollProfilesController } from './payroll-profiles/payroll-profiles.c
 import { PayrollProfilesService } from './payroll-profiles/payroll-profiles.service';
 import { TimesheetsController } from './timesheets/timesheets.controller';
 import { TimesheetsService } from './timesheets/timesheets.service';
+import { PayRunsController } from './pay-runs/pay-runs.controller';
+import { PayRunsService } from './pay-runs/pay-runs.service';
 
-// Day 1: profiles. Day 2: timesheets. PayRunsModule, DeductionsModule,
-// LeaveModule, PayslipsModule get added here as each day's slice is built,
-// same pattern CatalogueModule/BankModule already use for their sub-features.
 @Module({
-  controllers: [PayrollProfilesController, TimesheetsController],
-  providers: [PayrollProfilesService, TimesheetsService],
-  exports: [PayrollProfilesService, TimesheetsService],
+  controllers: [PayrollProfilesController, TimesheetsController, PayRunsController],
+  providers: [PayrollProfilesService, TimesheetsService, PayRunsService],
+  exports: [PayrollProfilesService, TimesheetsService, PayRunsService],
 })
 export class PayrollModule {}
