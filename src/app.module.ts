@@ -26,9 +26,10 @@ import { FuelModule } from './modules/fuel/fuel.module';
 // Lottery
 import { LotteryModule } from './modules/lottery/lottery.module';
 
+// Operations
+import { OperationsModule } from './modules/operations/operations.module';
+
 import { RequestContextMiddleware } from './common/context/request-context.middleware';
-
-
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { TenantContextGuard } from './common/guards/tenant-context.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -87,8 +88,8 @@ import { SendToPosModule } from './modules/send-to-pos/send-to-pos.module';
 
     FuelModule,
     LotteryModule,
-    PosIntegrationModule,
-    SendToPosModule,
+    OperationsModule,
+
   ],
 
   providers: [
