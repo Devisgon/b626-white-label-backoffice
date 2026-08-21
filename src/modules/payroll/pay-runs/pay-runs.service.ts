@@ -49,9 +49,9 @@ export class PayRunsService {
   //     period -> regularHours/overtimeHours -> grossPay = regular*rate +
   //     overtime*overtimeRate. Employees with zero approved hours in the
   //     period are skipped (nothing to pay).
-  //   - SALARY: fixed baseRate for the period, hours stay 0.
-  //   - Deductions: sum their active Deduction rows (Day 4 manages these;
-  //     if none exist yet, this is just 0 — the engine already supports it).
+  //   - SALARY: fixed baseRate for the period, minus a per-day deduction
+  //     for any APPROVED UNPAID leave inside the period.
+  //   - Deductions: sum their active Deduction rows.
   //   - netPay = grossPay - totalDeductions.
   // Only a DRAFT pay run can be processed, and processing is one-shot —
   // rerunning a PROCESSED/PAID run is blocked to avoid silently changing
@@ -102,8 +102,32 @@ export class PayRunsService {
         const overtimeRate = profile.overtimeRate ? Number(profile.overtimeRate) : Number(profile.baseRate) * 1.5;
         grossPay = regularHours * Number(profile.baseRate) + overtimeHours * overtimeRate;
       } else {
-        // SALARY — fixed amount for the period regardless of hours
+        // SALARY — fixed amount for the period, minus a per-day deduction
+        // for any APPROVED UNPAID leave that falls inside this period.
+        // Paid leave (SICK/CASUAL/PAID) does not reduce salary.
         grossPay = Number(profile.baseRate);
+
+        const unpaidLeaveDays = await this.prisma.leaveRequest.findMany({
+          where: {
+            userId: employee.id,
+            leaveType: 'UNPAID',
+            status: 'APPROVED',
+            startDate: { lte: payRun.periodEnd },
+            endDate: { gte: payRun.periodStart },
+          },
+        });
+        if (unpaidLeaveDays.length > 0) {
+          const periodDays =
+            Math.round((payRun.periodEnd.getTime() - payRun.periodStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+          const perDayRate = Number(profile.baseRate) / periodDays;
+          const totalUnpaidDays = unpaidLeaveDays.reduce((sum, l) => {
+            const overlapStart = l.startDate > payRun.periodStart ? l.startDate : payRun.periodStart;
+            const overlapEnd = l.endDate < payRun.periodEnd ? l.endDate : payRun.periodEnd;
+            const days = Math.round((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+            return sum + Math.max(days, 0);
+          }, 0);
+          grossPay = Math.max(grossPay - perDayRate * totalUnpaidDays, 0);
+        }
       }
 
       const deductions = await this.prisma.deduction.findMany({
@@ -135,6 +159,12 @@ export class PayRunsService {
       this.prisma.payRun.update({
         where: { id: payRun.id },
         data: { status: 'PROCESSED', runBy: adminUserId, runAt: new Date() },
+      }),
+      // One-time (non-recurring) deductions only ever get charged once —
+      // deactivate them now that they've been baked into this pay run.
+      this.prisma.deduction.updateMany({
+        where: { userId: { in: items.map((i) => i.userId) }, isRecurring: false, isActive: true },
+        data: { isActive: false },
       }),
     ]);
 
