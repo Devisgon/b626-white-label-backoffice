@@ -891,7 +891,10 @@ model lottery_settlements {
   @@index([status])
   @@index([settlement_date])
   @@index([deleted_at])
- model CheckPrintBatch {
+  @@index([tenant_id])
+  @@map("lottery_settlements")
+}
+model CheckPrintBatch {
   id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId   String @map("tenant_id")
   locationId String @map("location_id")
@@ -906,7 +909,6 @@ model lottery_settlements {
   @@index([tenantId, locationId], map: "idx_check_print_batches_tenant_location")
   @@map("check_print_batches")
 }
-
 model PosConnection {
   id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId   String @map("tenant_id")
