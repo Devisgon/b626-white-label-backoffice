@@ -1,114 +1,125 @@
-# Backoffice API — Merged Project
+## Backoffice API — Merged Project
 
-Product (mine) + Auth (Aqsa) + Banking (Hadia) ko ek single NestJS + Prisma
-project mein merge kiya gaya hai. Neeche wo sab decisions hain jo merge ke
-dauran liye gaye, aur setup ke steps.
+Product (mine) + Auth (Aqsa) + Banking (Hadia) have been merged into a single NestJS + Prisma project. Below are all the decisions made during the merge and the setup steps.
 
-## 1. Kya badla
+### 1. What Changed
 
-| Area | Pehle | Ab |
-|---|---|---|
-| NestJS / Prisma version | Product+Banking: Nest 11 / Prisma 6. Auth: Nest 10 / Prisma 5 | Sab **Nest 11 / Prisma 6** pe upgrade |
-| Database | 3 alag Supabase projects | 1 (product module ka Supabase project — jo aapne bataya) |
-| Prisma schema | 3 alag `schema.prisma` | 1 unified `prisma/schema.prisma`, koi naming collision nahi |
-| Auth on product/banking routes | **Public** — koi guard nahi | `JwtAuthGuard` + `RolesGuard` sab routes pe (except `@Public()` wale: login/register/etc) |
-| Banking's tenant/location context | Client-supplied `x-tenant-id` / `x-location-id` **headers** — koi bhi spoof kar sakta tha | Verified JWT (`req.user.tenantId` / `req.user.activeLocationId`) se derive hota hai — headers ab trust nahi hote |
-| Product/catalogue tenant scoping | Bilkul nahi tha (global tables) | `tenant_id` (+ store-specific tables mein `store_location_id`) — automatically enforced |
+| Area                             | Before                                                                     | Now                                                                                                               |
+| -------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| NestJS / Prisma version          | Product + Banking: Nest 11 / Prisma 6; Auth: Nest 10 / Prisma 5            | All upgraded to **Nest 11 / Prisma 6**                                                                            |
+| Database                         | 3 separate Supabase projects                                               | 1 Supabase project — the Product module's Supabase project                                                        |
+| Prisma schema                    | 3 separate `schema.prisma` files                                           | 1 unified `prisma/schema.prisma` with no naming collisions                                                        |
+| Auth on product/banking routes   | **Public** — no guards                                                     | `JwtAuthGuard` + `RolesGuard` on all routes except `@Public()` routes such as login/register                      |
+| Banking tenant/location context  | Client-supplied `x-tenant-id` / `x-location-id` headers — could be spoofed | Derived from the verified JWT (`req.user.tenantId` / `req.user.activeLocationId`) — headers are no longer trusted |
+| Product/catalogue tenant scoping | No tenant scoping — global tables                                          | `tenant_id` plus `store_location_id` for store-specific tables — automatically enforced                           |
 
-## 2. Security fix (important — please note)
+### 2. Security Fix — Important
 
-Hadia's banking module ka `TenantLocationGuard` client ke bheje huye
-`x-tenant-id` / `x-location-id` headers pe trust karta tha — matlab koi bhi
-caller apni marzi se dusre tenant ka data access/modify kar sakta tha, sirf
-header change karke. Ye replace kar diya gaya hai `TenantContextGuard` se,
-jo tenant/location sirf verified JWT se leta hai. Banking ke services mein
-koi code change nahi karna pada — wo already `@Ctx() ctx: RequestContext`
-pattern use kar rahe the, sirf guard ne jo context bharta tha wo change hua.
+Hadia's Banking module previously used `TenantLocationGuard`, which trusted the `x-tenant-id` / `x-location-id` headers sent by the client. This meant that anyone could potentially access or modify another tenant's data simply by changing these headers.
 
-## 3. Product module tenant scoping — approach
+This has been replaced with `TenantContextGuard`, which gets the tenant and location information only from the **verified JWT**.
 
-Product/catalogue module mein tenant ka concept sirf nahi tha (14
-sub-modules). Har service manually edit karne ke bajaye (jahan ek jagah bhi
-`tenant_id` filter bhool jaana = cross-tenant data leak), ek
-**Prisma Client Extension** likha gaya hai:
+No changes were required in the Banking services because they already use the `@Ctx() ctx: RequestContext` pattern. Only the guard responsible for populating the context was changed.
 
-- `src/common/context/request-context.store.ts` — `AsyncLocalStorage` jo
-  har request ke liye tenant/location/user context hold karta hai.
-- `src/common/context/request-context.middleware.ts` — request start pe
-  empty store khol deta hai.
-- `src/common/guards/tenant-context.guard.ts` — `JwtAuthGuard` ke baad
-  chalta hai, verified user se tenant/location nikal ke store mein bharta
-  hai.
-- `src/prisma/tenant-scoping.extension.ts` — automatically har catalogue
-  query (`findMany`, `create`, `update`, `delete`, etc.) mein `tenant_id`
-  (aur jahan zaroori ho `store_location_id`) inject kar deta hai.
-- `src/prisma/tenant-scoped-models.ts` — explicit allow-list ke models
-  (koi bhi naya catalogue model add karo to yahan register karna hoga).
+### 3. Product Module Tenant Scoping — Approach
 
-Matlab: koi bhi catalogue query bina tenant context ke chal hi nahi sakti —
-structurally impossible, kisi ek forgotten `where` clause pe depend nahi
-karta.
+The Product/Catalogue module previously did not have a tenant concept across its 14 sub-modules. Instead of manually modifying every service, a **Prisma Client Extension** was implemented.
 
-**Design choice**: Master data (categories, brands, suppliers, units,
-price books...) sirf `tenant_id` se scoped hai — poore tenant mein shared.
-Stock/quantity data (`inventory`, `inventory_logs`, `product_inventory`)
-`tenant_id` + `store_location_id` dono se — kyunki stock har store ka alag
-hota hai. Ye aam POS/backoffice systems ka standard pattern hai.
+The following components were added:
 
-## 4. Roles
+* `src/common/context/request-context.store.ts` — Uses `AsyncLocalStorage` to hold the tenant, location, and user context for each request.
+* `src/common/context/request-context.middleware.ts` — Creates an empty context store when a request starts.
+* `src/common/guards/tenant-context.guard.ts` — Runs after `JwtAuthGuard`, retrieves the tenant/location from the verified user, and stores it in the request context.
+* `src/prisma/tenant-scoping.extension.ts` — Automatically injects `tenant_id` and, where required, `store_location_id` into Catalogue Prisma operations such as `findMany`, `create`, `update`, `delete`, etc.
+* `src/prisma/tenant-scoped-models.ts` — Contains an explicit allow-list of models that should be tenant-scoped. Any new Catalogue model must be registered here.
 
-Har controller pe `@Roles(...)` laga diya gaya hai (defaults):
-- Banking: `OWNER_ADMIN`, `FINANCE_USER`
-- Catalogue: `OWNER_ADMIN`, `STORE_MANAGER`, `INVENTORY_USER`
+This means that Catalogue queries cannot run without a valid tenant context. The system does not rely on developers remembering to add a `where` clause every time, which reduces the risk of accidental cross-tenant data access.
 
-Ye starting point hai — per-endpoint fine-tune kar sakte hain
-(`src/common/decorators/roles.decorator.ts` use karke).
+**Design choice:** Master data such as categories, brands, suppliers, units, and price books is scoped only by `tenant_id`, meaning it is shared across the entire tenant.
 
-Inventory/product-inventory aur pura banking module `@RequireLocation()`
-se marked hai — matlab caller ne pehle `POST /auth/active-location` se
-apna store select kiya hona chahiye.
+Stock/quantity-related data such as `inventory`, `inventory_logs`, and `product_inventory` is scoped by both `tenant_id` and `store_location_id`, because inventory is maintained separately for each store.
 
-## 5. Setup
+This is a common pattern for POS/backoffice systems.
+
+### 4. Roles
+
+`@Roles(...)` has been added to each controller with the following default roles:
+
+* **Banking:** `OWNER_ADMIN`, `FINANCE_USER`
+* **Catalogue:** `OWNER_ADMIN`, `STORE_MANAGER`, `INVENTORY_USER`
+
+These are starting defaults and can be fine-tuned per endpoint using:
+
+`src/common/decorators/roles.decorator.ts`
+
+The Inventory/Product Inventory modules and the entire Banking module are marked with `@RequireLocation()`.
+
+This means the caller must first select a store using:
+
+`POST /auth/active-location`
+
+### 5. Setup
+
+Run:
 
 ```bash
 npm install
 ```
 
-`.env` already bana diya gaya hai (product module ke Supabase project ki
-DATABASE_URL/DIRECT_URL, auth module ke JWT secrets, sab merged). **Deploy
-se pehle sab secrets rotate karo** — teeno original `.env` files live
-credentials ke sath zip mein the.
+The `.env` file has already been created with the Product module's Supabase `DATABASE_URL`/`DIRECT_URL` and the Auth module's JWT secrets.
+
+**Before deploying, rotate all secrets.** The three original `.env` files contained live credentials and were included in the ZIP files.
+
+Generate the Prisma client:
 
 ```bash
-# Prisma client generate karo
 npx prisma generate
+```
 
-# Naya merged schema database pe apply karo (ye teeno modules ke
-# existing tables + naye tenant_id/store_location_id columns add karega)
+Then apply the merged schema to the database:
+
+```bash
 npx prisma migrate dev --name merge_three_modules
 ```
 
-⚠️ **`prisma migrate dev` chalane se pehle**: agar product module ki
-Supabase DB mein already data hai, to naye `tenant_id` columns `NOT NULL`
-hain — pehle un rows ko existing (ya ek default) tenant se backfill karna
-hoga, warna migration fail hoga. Options:
-1. Fresh DB pe migrate karo (agar abhi test/dev data hai, drop karke fresh
-   shuru karo), ya
-2. Migration ko do steps mein todo: pehle `tenant_id` ko nullable add
-   karke existing rows backfill karo, phir `NOT NULL` constraint lagao.
+⚠️ **Important:** Before running `prisma migrate dev`, check whether the Product module's Supabase database already contains data.
+
+The new `tenant_id` columns are `NOT NULL`. Existing rows must therefore be assigned to an existing tenant or a default tenant before the migration can succeed.
+
+There are two options:
+
+1. **Fresh database:** If the existing data is only test/development data, drop the database and start fresh.
+2. **Existing data:** Split the migration into two steps:
+
+   * First add `tenant_id` as nullable.
+   * Backfill the existing rows with the appropriate tenant.
+   * Then change `tenant_id` to `NOT NULL`.
+
+Start the application:
 
 ```bash
 npm run start:dev
 ```
 
-Swagger docs: `http://localhost:3000/api-docs` (username/password `.env`
-mein `SWAGGER_USER` / `SWAGGER_PASSWORD` se).
+Swagger documentation is available at:
 
-## 6. Login flow (client ke liye)
+`http://localhost:3000/api-docs`
 
-1. `POST /auth/login` → access + refresh token
-2. `POST /auth/active-location` → apna store select karo, naya token milega
-   jisme `activeLocationId` encoded hai
-3. Ab har request pe `Authorization: Bearer <token>` bhejo — koi
-   `x-tenant-id`/`x-location-id` header ki zaroorat nahi, wo ab token se
-   automatically aata hai.
+The Swagger username and password are configured in `.env` using:
+
+```env
+SWAGGER_USER
+SWAGGER_PASSWORD
+```
+
+### 6. Login Flow for the Client
+
+1. `POST /auth/login` → Returns an access token and refresh token.
+2. `POST /auth/active-location` → Select the user's store. A new token is returned containing `activeLocationId`.
+3. Send the new token with every request:
+
+```http
+Authorization: Bearer <token>
+```
+
+There is **no need to send** `x-tenant-id` or `x-location-id` headers anymore. The tenant and active location are automatically derived from the verified JWT.

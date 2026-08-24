@@ -9,7 +9,12 @@ import {
   Query,
   ParseUUIDPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiSecurity, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { PayeesService } from './payees.service';
 import { CreatePayeeDto } from './dto/create-payee.dto';
 import { UpdatePayeeDto } from './dto/update-payee.dto';
@@ -18,11 +23,12 @@ import { Ctx } from '../../../common/decorators/tenant-location.decorator';
 import type { RequestContext } from '../../../common/interfaces/request-context.interface';
 import { RequireLocation } from '../../../common/decorators/require-location.decorator';
 import { Roles } from '../../../common/decorators/roles.decorator';
-import { Role } from '../../auth/enums/role.enum';
+import { Role } from '../../../modules/auth/enums/role.enum';
 
 @ApiTags('Payees')
 @Roles(Role.OWNER_ADMIN, Role.FINANCE_USER)
 @RequireLocation()
+@ApiBearerAuth('accessToken')
 @Controller('bank/payees')
 export class PayeesController {
   constructor(private readonly service: PayeesService) {}

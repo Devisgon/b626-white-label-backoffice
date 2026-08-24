@@ -231,9 +231,30 @@ export class SalesService {
       );
 
       if (!stockRow) {
-        insufficientStock.push(
-          `${product.name ?? product.id} (need ${item.quantity})`,
-        );
+        const label = product.name ?? product.id;
+
+        if (candidates.length === 0) {
+          // `product_inventory` is store-scoped (see tenant-scoping.extension.ts):
+          // this product has ZERO stock rows under the caller's current active
+          // location — either stock was never added for this location, or it
+          // was added while a DIFFERENT location was active. This is distinct
+          // from "not enough units" and is the most common cause of every
+          // quantity (even 1) reading as unavailable.
+          insufficientStock.push(
+            `${label} — no stock recorded for your active location ` +
+              `(activeLocationId: ${ctx.locationId}). Check that stock was ` +
+              `added while THIS location was active, not a different one.`,
+          );
+        } else {
+          const totalAvailable = candidates.reduce(
+            (sum, row) => sum + (row.on_hand_quantity - row.reserved_quantity),
+            0,
+          );
+          insufficientStock.push(
+            `${label} (need ${item.quantity}, only ${totalAvailable} available at your active location)`,
+          );
+        }
+
         return null as any;
       }
 
@@ -297,54 +318,60 @@ export class SalesService {
     // Create sale + deduct stock atomically
     // ----------------------------------------------------------
 
-    const sale = await this.prisma.$transaction(async (tx) => {
-      const createdSale = await tx.sale.create({
-        data: {
-          sale_number: saleNumber,
-          customer_name: dto.customer_name ?? null,
-          customer_phone: dto.customer_phone ?? null,
-          subtotal,
-          tax,
-          discount,
-          total,
-          status: 'completed',
-          payment_method: dto.payment_method ?? 'cash',
-          items: { create: saleItems },
-        },
-        include: {
-          items: {
-            include: {
-              product: {
-                select: { id: true, name: true, sku: true, barcode: true },
+    const sale = await this.prisma.$transaction(
+      async (tx) => {
+        const createdSale = await tx.sale.create({
+          data: {
+            sale_number: saleNumber,
+            customer_name: dto.customer_name ?? null,
+            customer_phone: dto.customer_phone ?? null,
+            subtotal,
+            tax,
+            discount,
+            total,
+            status: 'completed',
+            payment_method: dto.payment_method ?? 'cash',
+            items: { create: saleItems },
+          },
+          include: {
+            items: {
+              include: {
+                product: {
+                  select: { id: true, name: true, sku: true, barcode: true },
+                },
               },
             },
           },
-        },
-      });
-
-      // Deduct stock. Re-checked with a conditional update (on_hand_quantity
-      // must still be >= requested) so a concurrent sale can't oversell
-      // between the read above and this write.
-      for (const deduction of stockDeductions) {
-        const result = await tx.product_inventory.updateMany({
-          where: {
-            id: deduction.inventoryRowId,
-            on_hand_quantity: { gte: deduction.quantity },
-          },
-          data: {
-            on_hand_quantity: { decrement: deduction.quantity },
-          },
         });
 
-        if (result.count === 0) {
-          throw new ConflictException(
-            'Stock changed while processing this sale — please retry.',
-          );
-        }
-      }
+        // Deduct stock. Re-checked with a conditional update (on_hand_quantity
+        // must still be >= requested) so a concurrent sale can't oversell
+        // between the read above and this write.
+        for (const deduction of stockDeductions) {
+          const result = await tx.product_inventory.updateMany({
+            where: {
+              id: deduction.inventoryRowId,
+              on_hand_quantity: { gte: deduction.quantity },
+            },
+            data: {
+              on_hand_quantity: { decrement: deduction.quantity },
+            },
+          });
 
-      return createdSale;
-    });
+          if (result.count === 0) {
+            throw new ConflictException(
+              'Stock changed while processing this sale — please retry.',
+            );
+          }
+        }
+
+        return createdSale;
+      },
+      {
+        maxWait: 10000,
+        timeout: 20000,
+      },
+    );
 
     return {
       success: true,
@@ -690,16 +717,17 @@ export class SalesService {
 
     let refundAmount = 0;
     const lineUpdates: { id: bigint; newRefundedQty: number }[] = [];
-    const stockRestocks: { inventoryLocationId: bigint | null; productId: bigint; quantity: number }[] =
-      [];
+    const stockRestocks: {
+      inventoryLocationId: bigint | null;
+      productId: bigint;
+      quantity: number;
+    }[] = [];
 
     for (const line of sale.items) {
       const refundQty = refundPlan.get(line.id.toString());
       if (!refundQty) continue;
 
-      const perUnitValue = this.roundMoney(
-        Number(line.total) / line.quantity,
-      );
+      const perUnitValue = this.roundMoney(Number(line.total) / line.quantity);
       refundAmount = this.roundMoney(refundAmount + perUnitValue * refundQty);
 
       lineUpdates.push({

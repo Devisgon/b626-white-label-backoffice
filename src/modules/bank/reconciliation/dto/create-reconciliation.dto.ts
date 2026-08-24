@@ -14,7 +14,10 @@ export class CreateReconciliationDto {
   @IsDateString()
   statementEndDate: string;
 
-  @ApiProperty({ example: 115000.0, description: 'Ending balance shown on the bank statement' })
+  @ApiProperty({
+    example: 115000.0,
+    description: 'Ending balance shown on the bank statement',
+  })
   @IsNumber()
   statementEndingBalance: number;
 }

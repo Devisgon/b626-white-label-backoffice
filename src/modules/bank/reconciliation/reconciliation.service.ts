@@ -67,7 +67,10 @@ export class ReconciliationService {
     const page = pagination.page ?? 1;
     const limit = pagination.limit ?? 20;
 
-    const where: any = { tenantId: ctx.tenantId, locationId: requireLocationId(ctx) };
+    const where: any = {
+      tenantId: ctx.tenantId,
+      locationId: requireLocationId(ctx),
+    };
     if (bankAccountId) where.bankAccountId = bankAccountId;
     if (status) where.status = status;
 

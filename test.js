@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 async function main() {
   try {
     await prisma.$connect();
-    console.log("CONNECTED");
+    console.log('CONNECTED');
   } catch (e) {
     console.error(e);
   } finally {

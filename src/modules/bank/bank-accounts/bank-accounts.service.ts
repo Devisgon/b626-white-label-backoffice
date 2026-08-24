@@ -118,8 +118,10 @@ export class BankAccountsService {
     if (dto.institution !== undefined) payload.institution = dto.institution;
     if (dto.accountType !== undefined) payload.accountType = dto.accountType;
     if (dto.lastFour !== undefined) payload.lastFour = dto.lastFour;
-    if (dto.openingBalance !== undefined) payload.openingBalance = dto.openingBalance;
-    if (dto.openingDate !== undefined) payload.openingDate = new Date(dto.openingDate);
+    if (dto.openingBalance !== undefined)
+      payload.openingBalance = dto.openingBalance;
+    if (dto.openingDate !== undefined)
+      payload.openingDate = new Date(dto.openingDate);
     if (dto.status !== undefined) payload.status = dto.status;
 
     const data = await this.prisma.bankAccount.update({
@@ -179,7 +181,8 @@ export class BankAccountsService {
     });
 
     const priorNet = priorTxns.reduce(
-      (sum, t) => sum + (t.direction === 'inflow' ? Number(t.amount) : -Number(t.amount)),
+      (sum, t) =>
+        sum + (t.direction === 'inflow' ? Number(t.amount) : -Number(t.amount)),
       0,
     );
     const openingBalance = Number(account.openingBalance) + priorNet;

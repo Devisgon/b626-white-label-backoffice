@@ -17,9 +17,9 @@
 // import { ForgotPasswordDto } from './dto/forgot-password.dto';
 // import { ResetPasswordDto } from './dto/reset-password.dto';
 // import { ActiveLocationDto } from './dto/active-location.dto';
-// import { Public } from '../common/decorators/public.decorator';
-// import { CurrentUser } from '../common/decorators/current-user.decorator';
-// import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+// import { Public } from '../../common/decorators/public.decorator';
+// import { CurrentUser } from '../../common/decorators/current-user.decorator';
+// import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 // @ApiTags('Auth')
 // @Controller('api/auth')
@@ -96,14 +96,7 @@
 //     return this.authService.setActiveLocation(userId, dto.locationId);
 //   }
 // }
-import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Post, Get, Body, Req, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import type { Request } from 'express';
@@ -130,7 +123,8 @@ export class AuthController {
   @Public()
   @Post('register')
   @ApiOperation({
-    summary: 'Register a new user — automatically creates a new organization (tenant), and this user becomes its Owner/Admin. Sends an email verification OTP.',
+    summary:
+      'Register a new user — automatically creates a new organization (tenant), and this user becomes its Owner/Admin. Sends an email verification OTP.',
   })
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
@@ -138,7 +132,10 @@ export class AuthController {
 
   @Public()
   @Post('verify-email')
-  @ApiOperation({ summary: 'Verify email using the OTP sent at registration — logs the user in immediately' })
+  @ApiOperation({
+    summary:
+      'Verify email using the OTP sent at registration — logs the user in immediately',
+  })
   verifyEmail(@Body() dto: VerifyEmailDto) {
     return this.authService.verifyEmail(dto.email, dto.otp);
   }
@@ -148,12 +145,13 @@ export class AuthController {
   @Post('resend-otp')
   @ApiOperation({ summary: 'Resend a verification or password-reset OTP' })
   resendOtp(@Body() dto: ResendOtpDto) {
-    return this.authService.resendOtp(dto.email, dto.purpose as any);
+    return this.authService.resendOtp(dto.email, dto.purpose);
   }
 
   @Post('onboarding/location')
   @ApiOperation({
-    summary: 'Create the first location during onboarding — requires the token issued right after email verification. Completes onboarding.',
+    summary:
+      'Create the first location during onboarding — requires the token issued right after email verification. Completes onboarding.',
   })
   createOnboardingLocation(
     @CurrentUser('id') userId: string,
@@ -192,20 +190,31 @@ export class AuthController {
   }
 
   @Get('me')
-  @ApiOperation({ summary: 'Get the current authenticated user profile, including onboarding status' })
+  @ApiOperation({
+    summary:
+      'Get the current authenticated user profile, including onboarding status',
+  })
   getMe(@CurrentUser('id') userId: string) {
     return this.authService.getMe(userId);
   }
 
   @Get('locations')
-  @ApiOperation({ summary: 'Get the locations/stores the current user can access' })
+  @ApiOperation({
+    summary: 'Get the locations/stores the current user can access',
+  })
   getMyLocations(@CurrentUser('id') userId: string) {
     return this.authService.getMyLocations(userId);
   }
 
   @Post('active-location')
-  @ApiOperation({ summary: 'Switch active location among locations the user already has access to' })
-  setActiveLocation(@CurrentUser('id') userId: string, @Body() dto: ActiveLocationDto) {
+  @ApiOperation({
+    summary:
+      'Switch active location among locations the user already has access to',
+  })
+  setActiveLocation(
+    @CurrentUser('id') userId: string,
+    @Body() dto: ActiveLocationDto,
+  ) {
     return this.authService.setActiveLocation(userId, dto.locationId);
   }
 }

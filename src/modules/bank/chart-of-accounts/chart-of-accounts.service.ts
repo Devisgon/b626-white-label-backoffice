@@ -79,7 +79,10 @@ export class ChartOfAccountsService {
     const page = pagination.page ?? 1;
     const limit = pagination.limit ?? 20;
 
-    const where: any = { tenantId: ctx.tenantId, locationId: requireLocationId(ctx) };
+    const where: any = {
+      tenantId: ctx.tenantId,
+      locationId: requireLocationId(ctx),
+    };
     if (status) where.status = status;
     if (category) where.accountCategory = category;
     if (search) {

@@ -8,12 +8,12 @@ import { PrismaModule } from './prisma/prisma.module';
 
 // Auth / tenancy
 import { AuthModule } from './modules/auth/auth.module';
-import { UsersModule } from './users/users.module';
-import { LocationsModule } from './locations/locations.module';
+import { UsersModule } from './modules/users/users.module';
+import { LocationsModule } from './modules/locations/locations.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 
 // Product catalogue
-import { CatalogueModule } from './catalogue/catalogue.module';
+import { CatalogueModule } from './modules/catalogue/catalogue.module';
 
 // Banking
 import { BankModule } from './modules/bank/bank.module';
@@ -27,6 +27,15 @@ import { PayrollModule } from './modules/payroll/payroll.module';
 // Settings
 import { SettingsModule } from './modules/settings/settings.module';
 
+// Fuel
+import { FuelModule } from './modules/fuel/fuel.module';
+
+// Lottery
+import { LotteryModule } from './modules/lottery/lottery.module';
+
+// Operations
+import { OperationsModule } from './modules/operations/operations.module';
+
 import { RequestContextMiddleware } from './common/context/request-context.middleware';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { TenantContextGuard } from './common/guards/tenant-context.guard';
@@ -34,6 +43,12 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { ModulePermissionGuard } from './common/guards/module-permission.guard';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+
+//pos integration
+import { PosIntegrationModule } from './modules/pos-integration/pos-integration.module';
+
+//send to pos
+import { SendToPosModule } from './modules/send-to-pos/send-to-pos.module';
 
 @Module({
   imports: [
@@ -43,10 +58,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     // Never logs the Authorization header or request bodies with tokens.
     LoggerModule.forRoot({
       pinoHttp: {
-        level:
-          process.env.NODE_ENV === 'production'
-            ? 'info'
-            : 'debug',
+        level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
         transport:
           process.env.NODE_ENV === 'production'
             ? undefined
@@ -67,11 +79,8 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     // Global rate limiting
     ThrottlerModule.forRoot([
       {
-        ttl:
-          Number(process.env.THROTTLE_TTL || 60) *
-          1000,
-        limit:
-          Number(process.env.THROTTLE_LIMIT || 5),
+        ttl: Number(process.env.THROTTLE_TTL || 60) * 1000,
+        limit: Number(process.env.THROTTLE_LIMIT || 5),
       },
     ]),
 
@@ -87,6 +96,13 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     SalesModule,
     PayrollModule,
     SettingsModule,
+
+    FuelModule,
+    LotteryModule,
+    OperationsModule,
+
+    PosIntegrationModule,
+    SendToPosModule,
   ],
 
   providers: [
@@ -111,8 +127,6 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(RequestContextMiddleware)
-      .forRoutes('*');
+    consumer.apply(RequestContextMiddleware).forRoutes('*');
   }
 }

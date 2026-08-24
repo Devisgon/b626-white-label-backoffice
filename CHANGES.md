@@ -39,8 +39,9 @@ TypeScript compile).
 
 Both had Prisma models but **no module existed at all** despite being
 explicitly requested. Added:
+
 - `catalogue/price-books` — CRUD, item management (`POST/PATCH/DELETE
-  /catalogue/price-books/:id/items[/:itemId]`), duplicate-name prevention.
+/catalogue/price-books/:id/items[/:itemId]`), duplicate-name prevention.
 - `catalogue/carton-mappings` — CRUD, prevents a product being mapped as a
   carton of itself, prevents duplicate carton/child pairs (also enforced at
   the DB level now — see schema changes).
@@ -51,6 +52,7 @@ explicitly requested. Added:
 `ProductAuditService.log()` was writing through a **separate Supabase REST
 client**, while product history reads (`getProductHistory`) read through
 Prisma. This meant:
+
 - Audit writes were not part of the same DB transaction as the product
   change — a rollback could leave the audit write already committed via
   Supabase (or vice versa lose it), i.e. no atomicity.
@@ -82,6 +84,7 @@ Supabase-specific feature, but no longer runs at import time.
   reviewing the diff.
 
 ## Other modules (Categories, Brands, Suppliers, Departments, Units,
+
 Inventory, Inventory Locations, Product Inventory)
 
 Audited for the same class of bug (missing soft-delete filters, raw

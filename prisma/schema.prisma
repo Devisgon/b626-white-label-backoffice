@@ -280,53 +280,53 @@ model product_inventory {
 }
 
 model Tenant {
-  id        String     @id @default(uuid())
-  name      String
-  createdAt DateTime   @default(now())
-  locations Location[]
-  users     User[]
+  id           String        @id @default(uuid())
+  name         String
+  createdAt    DateTime      @default(now())
+  locations    Location[]
+  users        User[]
   storeProfile StoreProfile?
 
   @@map("tenants")
 }
 
 model User {
-  id               String           @id @default(uuid())
-  tenantId         String
-  name             String
-  email            String
-  passwordHash     String
-  role             Role             @default(INVENTORY_USER)
-  isActive         Boolean          @default(true)
-  isEmailVerified  Boolean          @default(false)
-  onboardingStatus OnboardingStatus @default(PENDING_EMAIL_VERIFICATION)
-  activeLocationId String?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  auditLogs        AuditLog[]
-  otpTokens        OtpToken[]
-  refreshTokens    RefreshToken[]
-  locationAccess   UserLocation[]
-  permissionOverrides UserPermission[]
-  payrollProfile   PayrollProfile?
-  timesheets       Timesheet[]
-  payRunItems      PayRunItem[]
-  deductions       Deduction[]
-  leaveRequests    LeaveRequest[]
+  id                      String                   @id @default(uuid())
+  tenantId                String
+  name                    String
+  email                   String
+  passwordHash            String
+  role                    Role                     @default(INVENTORY_USER)
+  isActive                Boolean                  @default(true)
+  isEmailVerified         Boolean                  @default(false)
+  onboardingStatus        OnboardingStatus         @default(PENDING_EMAIL_VERIFICATION)
+  activeLocationId        String?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  auditLogs               AuditLog[]
+  otpTokens               OtpToken[]
+  refreshTokens           RefreshToken[]
+  locationAccess          UserLocation[]
+  permissionOverrides     UserPermission[]
+  payrollProfile          PayrollProfile?
+  timesheets              Timesheet[]
+  payRunItems             PayRunItem[]
+  deductions              Deduction[]
+  leaveRequests           LeaveRequest[]
   notificationPreferences NotificationPreference[]
-  tenant           Tenant           @relation(fields: [tenantId], references: [id])
+  tenant                  Tenant                   @relation(fields: [tenantId], references: [id])
 
   @@unique([tenantId, email])
   @@map("users")
 }
 
 model Location {
-  id         String         @id @default(uuid())
-  tenantId   String
-  name       String
-  address    String?
-  tenant     Tenant         @relation(fields: [tenantId], references: [id])
-  userAccess UserLocation[]
+  id           String                 @id @default(uuid())
+  tenantId     String
+  name         String
+  address      String?
+  tenant       Tenant                 @relation(fields: [tenantId], references: [id])
+  userAccess   UserLocation[]
   moduleAccess LocationModuleAccess[]
   timesheets   Timesheet[]
   taxRules     TaxRule[]
@@ -407,7 +407,7 @@ model BankAccount {
   payees                        Payee[]
   recurringTransactionTemplates RecurringTransactionTemplate[]
   transactions                  Transaction[]
-  payrollProfiles                PayrollProfile[]
+  payrollProfiles               PayrollProfile[]
 
   @@index([tenantId, locationId], map: "idx_bank_accounts_tenant_location")
   @@map("bank_accounts")
@@ -626,6 +626,12 @@ model Transaction {
   payee                      Payee?               @relation(fields: [payeeId], references: [id])
   reversalOf                 Transaction?         @relation("TransactionReversal", fields: [reversalOfTransactionId], references: [id])
   reversedByEntries          Transaction[]        @relation("TransactionReversal")
+  checkNumber                String?              @map("check_number")
+  isPrinted                  Boolean              @default(false) @map("is_printed")
+  printedAt                  DateTime?            @map("printed_at") @db.Timestamptz(6)
+  printBatchId               String?              @map("print_batch_id") @db.Uuid
+  printBatch                 CheckPrintBatch?     @relation(fields: [printBatchId], references: [id])
+  isPayrollCheck             Boolean              @default(false) @map("is_payroll_check")
 
   @@index([bankAccountId, status, transactionDate], map: "idx_transactions_account_status_date")
   @@index([tenantId, locationId], map: "idx_transactions_tenant_location")
@@ -665,11 +671,11 @@ enum PermissionAction {
 // Master catalog of permissions. One row per (module, action) pair, e.g.
 // (BANKING, VIEW), (BANKING, MANAGE). Seeded by prisma/seed-permissions.ts.
 model Permission {
-  id          String            @id @default(uuid())
+  id          String           @id @default(uuid())
   module      ModuleName
   action      PermissionAction
   description String?
-  createdAt   DateTime          @default(now())
+  createdAt   DateTime         @default(now())
 
   rolePermissions RolePermission[]
   userPermissions UserPermission[]
@@ -737,16 +743,16 @@ enum PayType {
 }
 
 model PayrollProfile {
-  id               String   @id @default(uuid())
-  tenantId         String
-  userId           String   @unique
-  payType          PayType
-  baseRate         Decimal  @db.Decimal(12, 2) // hourly rate OR monthly salary, depending on payType
-  overtimeRate     Decimal? @db.Decimal(12, 2) // only meaningful when payType = HOURLY
-  bankAccountId    String?  @db.Uuid // optional link to an existing BankAccount for direct deposit
-  isActive         Boolean  @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id            String   @id @default(uuid())
+  tenantId      String
+  userId        String   @unique
+  payType       PayType
+  baseRate      Decimal  @db.Decimal(12, 2) // hourly rate OR monthly salary, depending on payType
+  overtimeRate  Decimal? @db.Decimal(12, 2) // only meaningful when payType = HOURLY
+  bankAccountId String?  @db.Uuid // optional link to an existing BankAccount for direct deposit
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   bankAccount BankAccount? @relation(fields: [bankAccountId], references: [id])
@@ -805,7 +811,7 @@ model PayRun {
   runAt       DateTime?
   createdAt   DateTime     @default(now())
 
-  location Location      @relation(fields: [locationId], references: [id])
+  location Location     @relation(fields: [locationId], references: [id])
   items    PayRunItem[]
 
   @@map("pay_runs")
@@ -815,14 +821,14 @@ model PayRun {
 // grossPay = regularHours*rate + overtimeHours*overtimeRate.
 // netPay = grossPay - totalDeductions.
 model PayRunItem {
-  id               String  @id @default(uuid())
-  payRunId         String
-  userId           String
-  regularHours     Decimal @db.Decimal(6, 2)
-  overtimeHours    Decimal @db.Decimal(6, 2)
-  grossPay         Decimal @db.Decimal(12, 2)
-  totalDeductions  Decimal @db.Decimal(12, 2) @default(0)
-  netPay           Decimal @db.Decimal(12, 2)
+  id              String  @id @default(uuid())
+  payRunId        String
+  userId          String
+  regularHours    Decimal @db.Decimal(6, 2)
+  overtimeHours   Decimal @db.Decimal(6, 2)
+  grossPay        Decimal @db.Decimal(12, 2)
+  totalDeductions Decimal @default(0) @db.Decimal(12, 2)
+  netPay          Decimal @db.Decimal(12, 2)
 
   payRun PayRun @relation(fields: [payRunId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id])
@@ -921,11 +927,11 @@ model TaxRule {
 }
 
 model ReceiptSettings {
-  id            String  @id @default(uuid())
-  tenantId      String  @unique
+  id            String   @id @default(uuid())
+  tenantId      String   @unique
   footerText    String?
-  showLogo      Boolean @default(true)
-  invoicePrefix String  @default("INV-")
+  showLogo      Boolean  @default(true)
+  invoicePrefix String   @default("INV-")
   updatedAt     DateTime @updatedAt
 
   @@map("receipt_settings")
@@ -974,11 +980,11 @@ model NotificationPreference {
 }
 
 model SecurityPolicy {
-  id                    String  @id @default(uuid())
-  tenantId              String  @unique
-  minPasswordLength     Int     @default(8)
-  sessionTimeoutMinutes Int     @default(60)
-  require2FA            Boolean @default(false)
+  id                    String   @id @default(uuid())
+  tenantId              String   @unique
+  minPasswordLength     Int      @default(8)
+  sessionTimeoutMinutes Int      @default(60)
+  require2FA            Boolean  @default(false)
   updatedAt             DateTime @updatedAt
 
   @@map("security_policies")
@@ -1035,17 +1041,17 @@ model sale {
 }
 
 model sale_items {
-  id                    BigInt    @id @default(autoincrement())
-  sale_id               String    @db.Uuid
+  id                    BigInt   @id @default(autoincrement())
+  sale_id               String   @db.Uuid
   product_id            BigInt
   quantity              Int
-  unit_price            Decimal   @db.Decimal(14, 2)
-  discount              Decimal   @default(0) @db.Decimal(14, 2)
-  tax                   Decimal   @default(0) @db.Decimal(14, 2)
-  total                 Decimal   @db.Decimal(14, 2)
-  refunded_quantity     Int       @default(0)
+  unit_price            Decimal  @db.Decimal(14, 2)
+  discount              Decimal  @default(0) @db.Decimal(14, 2)
+  tax                   Decimal  @default(0) @db.Decimal(14, 2)
+  total                 Decimal  @db.Decimal(14, 2)
+  refunded_quantity     Int      @default(0)
   inventory_location_id BigInt?
-  created_at            DateTime  @default(now()) @db.Timestamptz(6)
+  created_at            DateTime @default(now()) @db.Timestamptz(6)
 
   sale    sale     @relation(fields: [sale_id], references: [id], onDelete: Cascade)
   product products @relation(fields: [product_id], references: [id])
@@ -1053,4 +1059,441 @@ model sale_items {
   @@index([sale_id])
   @@index([product_id])
   @@map("sale_items")
+}
+
+// FUEL MODULE
+
+model fuel_tanks {
+  id            BigInt            @id @default(autoincrement())
+  name          String
+  fuel_type     String
+  capacity      Decimal           @db.Decimal(10, 2)
+  current_stock Decimal           @default(0) @db.Decimal(10, 2)
+  location_id   String?           @db.Uuid
+  status        String?           @default("Active")
+  created_at    DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime          @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at    DateTime?         @db.Timestamptz(6)
+  tenant_id     String?           @db.Uuid
+  pumps         fuel_pumps[]
+  deliveries    fuel_deliveries[]
+  sales         fuel_sales[]
+
+  @@index([status])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@map("fuel_tanks")
+}
+
+model fuel_pumps {
+  id          BigInt       @id @default(autoincrement())
+  name        String
+  tank_id     BigInt
+  location_id String?      @db.Uuid
+  status      String?      @default("Active")
+  created_at  DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at  DateTime?    @db.Timestamptz(6)
+  tenant_id   String?      @db.Uuid
+  tank        fuel_tanks   @relation(fields: [tank_id], references: [id])
+  sales       fuel_sales[]
+
+  @@index([status])
+  @@index([tank_id])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@map("fuel_pumps")
+}
+
+model fuel_prices {
+  id              BigInt    @id @default(autoincrement())
+  fuel_type       String
+  price_per_liter Decimal   @db.Decimal(10, 2)
+  effective_from  DateTime  @db.Timestamptz(6)
+  location_id     String?   @db.Uuid
+  status          String?   @default("Active")
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at      DateTime? @db.Timestamptz(6)
+  tenant_id       String?   @db.Uuid
+
+  @@index([fuel_type])
+  @@index([status])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@map("fuel_prices")
+}
+
+model fuel_deliveries {
+  id             BigInt     @id @default(autoincrement())
+  tank_id        BigInt
+  supplier_name  String?
+  quantity       Decimal    @db.Decimal(10, 2)
+  invoice_number String?
+  delivery_date  DateTime   @db.Timestamptz(6)
+  status         String?    @default("Received")
+  created_at     DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime   @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at     DateTime?  @db.Timestamptz(6)
+  tenant_id      String?    @db.Uuid
+  tank           fuel_tanks @relation(fields: [tank_id], references: [id])
+
+  @@index([tank_id])
+  @@index([status])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@map("fuel_deliveries")
+}
+
+model fuel_sales {
+  id              BigInt     @id @default(autoincrement())
+  pump_id         BigInt
+  tank_id         BigInt
+  opening_reading Decimal    @db.Decimal(12, 2)
+  closing_reading Decimal    @db.Decimal(12, 2)
+  liters_sold     Decimal    @db.Decimal(10, 2)
+  price_per_liter Decimal    @db.Decimal(10, 2)
+  total_amount    Decimal    @db.Decimal(14, 2)
+  payment_method  String?    @default("cash")
+  shift           String?
+  sale_date       DateTime   @db.Timestamptz(6)
+  status          String?    @default("Completed")
+  created_at      DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime   @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at      DateTime?  @db.Timestamptz(6)
+  tenant_id       String?    @db.Uuid
+  pump            fuel_pumps @relation(fields: [pump_id], references: [id])
+  tank            fuel_tanks @relation(fields: [tank_id], references: [id])
+
+  @@index([pump_id])
+  @@index([tank_id])
+  @@index([status])
+  @@index([sale_date])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@map("fuel_sales")
+}
+
+// LOTTERY MODULE
+
+model lottery_games {
+  id               BigInt          @id @default(autoincrement())
+  name             String
+  game_number      String?         @unique
+  ticket_price     Decimal         @db.Decimal(10, 2)
+  tickets_per_pack Int?
+  status           String?         @default("Active")
+  created_at       DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at       DateTime?       @db.Timestamptz(6)
+  tenant_id        String?         @db.Uuid
+  packs            lottery_packs[]
+
+  @@index([status])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@map("lottery_games")
+}
+
+model lottery_packs {
+  id              BigInt          @id @default(autoincrement())
+  game_id         BigInt
+  pack_number     String
+  start_ticket_no Int
+  end_ticket_no   Int
+  activated_at    DateTime?       @db.Timestamptz(6)
+  location_id     String?         @db.Uuid
+  status          String?         @default("In Stock")
+  created_at      DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at      DateTime?       @db.Timestamptz(6)
+  tenant_id       String?         @db.Uuid
+  game            lottery_games   @relation(fields: [game_id], references: [id])
+  sales           lottery_sales[]
+
+  @@index([game_id])
+  @@index([status])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@map("lottery_packs")
+}
+
+model lottery_sales {
+  id                BigInt        @id @default(autoincrement())
+  pack_id           BigInt
+  opening_ticket_no Int
+  closing_ticket_no Int
+  tickets_sold      Int
+  total_amount      Decimal       @db.Decimal(14, 2)
+  payout_amount     Decimal       @default(0) @db.Decimal(14, 2)
+  shift             String?
+  sale_date         DateTime      @db.Timestamptz(6)
+  status            String?       @default("Completed")
+  created_at        DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at        DateTime?     @db.Timestamptz(6)
+  tenant_id         String?       @db.Uuid
+  pack              lottery_packs @relation(fields: [pack_id], references: [id])
+
+  @@index([pack_id])
+  @@index([status])
+  @@index([sale_date])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@map("lottery_sales")
+}
+
+model lottery_settlements {
+  id              BigInt    @id @default(autoincrement())
+  location_id     String?   @db.Uuid
+  settlement_date DateTime  @db.Timestamptz(6)
+  total_sales     Decimal   @db.Decimal(14, 2)
+  total_payouts   Decimal   @db.Decimal(14, 2)
+  net_amount      Decimal   @db.Decimal(14, 2)
+  status          String?   @default("Pending")
+  notes           String?
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at      DateTime? @db.Timestamptz(6)
+  tenant_id       String?   @db.Uuid
+
+  @@index([status])
+  @@index([settlement_date])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@map("lottery_settlements")
+}
+
+model CheckPrintBatch {
+  id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String @map("tenant_id")
+  locationId String @map("location_id")
+
+  startingCheckNumber String   @map("starting_check_number")
+  checkCount          Int      @map("check_count")
+  printedBy           String?  @map("printed_by")
+  printedAt           DateTime @default(now()) @map("printed_at") @db.Timestamptz(6)
+
+  transactions Transaction[]
+
+  @@index([tenantId, locationId], map: "idx_check_print_batches_tenant_location")
+  @@map("check_print_batches")
+}
+
+model PosConnection {
+  id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String @map("tenant_id")
+  locationId String @map("location_id")
+
+  provider         String  @default("verifone_ruby_ci") @map("provider")
+  siteName         String  @map("site_name")
+  serviceId        String  @map("service_id")
+  externalSiteId   String  @map("external_site_id")
+  connectionMode   String  @default("file_xml") @map("connection_mode")
+  commanderRelease String? @map("commander_release")
+  notes            String?
+
+  isEnabled      Boolean @default(true) @map("is_enabled")
+  disabledReason String? @map("disabled_reason")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  createdBy String?  @map("created_by")
+
+  mappings        PosMapping[]
+  outboundBatches PosOutboundBatch[]
+  inboundBatches  PosInboundBatch[]
+  events          PosEvent[]
+
+  @@unique([tenantId, locationId])
+  @@index([tenantId, locationId], map: "idx_pos_connections_tenant_location")
+  @@map("pos_connections")
+}
+
+model PosMapping {
+  id              String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String @map("tenant_id")
+  locationId      String @map("location_id")
+  posConnectionId String @map("pos_connection_id") @db.Uuid
+
+  internalEntityType  String  @map("internal_entity_type")
+  internalEntityId    String  @map("internal_entity_id")
+  externalEntityType  String  @map("external_entity_type")
+  externalEntityKey   String  @map("external_entity_key")
+  externalParentKey   String? @map("external_parent_key")
+  externalDisplayName String? @map("external_display_name")
+
+  status     String  @default("unresolved") @map("status")
+  isRequired Boolean @default(true) @map("is_required")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  createdBy String?  @map("created_by")
+
+  posConnection PosConnection @relation(fields: [posConnectionId], references: [id])
+
+  @@unique([posConnectionId, internalEntityType, internalEntityId])
+  @@index([tenantId, locationId], map: "idx_pos_mappings_tenant_location")
+  @@index([posConnectionId, status], map: "idx_pos_mappings_connection_status")
+  @@map("pos_mappings")
+}
+
+model PosOutboundBatch {
+  id              String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String @map("tenant_id")
+  locationId      String @map("location_id")
+  posConnectionId String @map("pos_connection_id") @db.Uuid
+
+  status       String    @default("pending") @map("status")
+  itemCount    Int       @default(0) @map("item_count")
+  sentAt       DateTime? @map("sent_at") @db.Timestamptz(6)
+  errorMessage String?   @map("error_message")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy String?  @map("created_by")
+
+  posConnection PosConnection          @relation(fields: [posConnectionId], references: [id])
+  items         PosOutboundBatchItem[]
+
+  @@index([tenantId, locationId], map: "idx_pos_outbound_batches_tenant_location")
+  @@map("pos_outbound_batches")
+}
+
+model PosOutboundBatchItem {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchId   String @map("batch_id") @db.Uuid
+  mappingId String @map("mapping_id") @db.Uuid
+  payload   Json
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  batch PosOutboundBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId], map: "idx_pos_outbound_items_batch")
+  @@map("pos_outbound_batch_items")
+}
+
+model PosInboundBatch {
+  id              String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String @map("tenant_id")
+  locationId      String @map("location_id")
+  posConnectionId String @map("pos_connection_id") @db.Uuid
+
+  status     String    @default("pending_review") @map("status")
+  itemCount  Int       @default(0) @map("item_count")
+  reviewedBy String?   @map("reviewed_by")
+  reviewedAt DateTime? @map("reviewed_at") @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  posConnection PosConnection @relation(fields: [posConnectionId], references: [id])
+
+  @@index([tenantId, locationId], map: "idx_pos_inbound_batches_tenant_location")
+  @@map("pos_inbound_batches")
+}
+
+model PosEvent {
+  id              String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String @map("tenant_id")
+  locationId      String @map("location_id")
+  posConnectionId String @map("pos_connection_id") @db.Uuid
+
+  eventType   String  @map("event_type")
+  description String?
+  performedBy String? @map("performed_by")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  posConnection PosConnection @relation(fields: [posConnectionId], references: [id])
+
+  @@index([posConnectionId, createdAt], map: "idx_pos_events_connection_date")
+  @@map("pos_events")
+}
+
+// OPERATIONS MODULE
+// ==========================================================
+
+model operations_shifts {
+  id            BigInt    @id @default(autoincrement())
+  staff_name    String
+  location_id   String?   @db.Uuid
+  opening_float Decimal   @db.Decimal(12, 2)
+  closing_cash  Decimal?  @db.Decimal(12, 2)
+  shift_start   DateTime  @db.Timestamptz(6)
+  shift_end     DateTime? @db.Timestamptz(6)
+  status        String?   @default("Open")
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at    DateTime? @db.Timestamptz(6)
+  tenant_id     String?   @db.Uuid
+
+  @@index([status])
+  @@index([location_id])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@map("operations_shifts")
+}
+
+model operations_expenses {
+  id             BigInt    @id @default(autoincrement())
+  category       String
+  description    String?
+  amount         Decimal   @db.Decimal(14, 2)
+  location_id    String?   @db.Uuid
+  expense_date   DateTime  @db.Timestamptz(6)
+  payment_method String?   @default("cash")
+  status         String?   @default("Recorded")
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at     DateTime? @db.Timestamptz(6)
+  tenant_id      String?   @db.Uuid
+
+  @@index([category])
+  @@index([status])
+  @@index([expense_date])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@map("operations_expenses")
+}
+
+model operations_maintenance_logs {
+  id          BigInt    @id @default(autoincrement())
+  title       String
+  description String?
+  location_id String?   @db.Uuid
+  priority    String?   @default("Medium")
+  reported_by String?
+  status      String?   @default("Reported")
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at  DateTime? @db.Timestamptz(6)
+  tenant_id   String?   @db.Uuid
+
+  @@index([priority])
+  @@index([status])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@map("operations_maintenance_logs")
+}
+
+model operations_checklist_items {
+  id             BigInt    @id @default(autoincrement())
+  item_name      String
+  checklist_type String?   @default("Opening")
+  location_id    String?   @db.Uuid
+  checklist_date DateTime  @db.Timestamptz(6)
+  completed_by   String?
+  completed_at   DateTime? @db.Timestamptz(6)
+  status         String?   @default("Pending")
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at     DateTime? @db.Timestamptz(6)
+  tenant_id      String?   @db.Uuid
+
+  @@index([checklist_type])
+  @@index([checklist_date])
+  @@index([status])
+  @@index([deleted_at])
+  @@index([tenant_id])
+  @@map("operations_checklist_items")
 }

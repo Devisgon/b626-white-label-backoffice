@@ -1,17 +1,3 @@
-// import { ApiProperty } from '@nestjs/swagger';
-// import { IsString, IsOptional } from 'class-validator';
-
-// export class CreateOnboardingLocationDto {
-//   @ApiProperty({ example: 'Main Store' })
-//   @IsString()
-//   name: string;
-
-//   @ApiProperty({ example: 'Okara, Punjab', required: false })
-//   @IsOptional()
-//   @IsString()
-//   address?: string;
-// }
-
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsOptional, IsArray, IsEnum } from 'class-validator';
 import { ModuleName } from '@prisma/client';
@@ -19,7 +5,7 @@ import { ModuleName } from '@prisma/client';
 export class CreateOnboardingLocationDto {
   @ApiProperty({ example: 'Main Store' })
   @IsString()
-  name: string;
+  name!: string;
 
   @ApiProperty({ example: 'Okara, Punjab', required: false })
   @IsOptional()

@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreatePayRunDto } from './dto/create-pay-run.dto';
 
@@ -179,11 +180,18 @@ export class PayRunsService {
     return this.prisma.payRun.update({ where: { id: payRun.id }, data: { status: 'PAID' } });
   }
 
-  private async getOwnedPayRun(tenantId: string, id: string, include?: any) {
-    const payRun = await this.prisma.payRun.findUnique({ where: { id }, include });
-    if (!payRun || payRun.tenantId !== tenantId) {
+  private async getOwnedPayRun<T extends Prisma.PayRunInclude | undefined = undefined>(
+    tenantId: string,
+    id: string,
+    include?: T,
+  ): Promise<Prisma.PayRunGetPayload<{ include: T }>> {
+    const payRun = await this.prisma.payRun.findUnique({
+      where: { id },
+      include,
+    } as Prisma.PayRunFindUniqueArgs);
+    if (!payRun || (payRun as { tenantId: string }).tenantId !== tenantId) {
       throw new NotFoundException('Pay run not found');
     }
-    return payRun;
+    return payRun as Prisma.PayRunGetPayload<{ include: T }>;
   }
 }

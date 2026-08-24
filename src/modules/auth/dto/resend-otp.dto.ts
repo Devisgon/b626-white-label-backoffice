@@ -11,7 +11,10 @@ export class ResendOtpDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({ enum: OtpPurposeDto, example: OtpPurposeDto.EMAIL_VERIFICATION })
+  @ApiProperty({
+    enum: OtpPurposeDto,
+    example: OtpPurposeDto.EMAIL_VERIFICATION,
+  })
   @IsEnum(OtpPurposeDto)
   purpose: OtpPurposeDto;
 }

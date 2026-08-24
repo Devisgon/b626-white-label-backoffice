@@ -53,7 +53,10 @@ export function withTenantScoping<T extends PrismaClient>(prisma: T) {
             scope.store_location_id = ctx.locationId;
           }
 
-          if (READ_OPERATIONS.has(operation) || WRITE_WHERE_OPERATIONS.has(operation)) {
+          if (
+            READ_OPERATIONS.has(operation) ||
+            WRITE_WHERE_OPERATIONS.has(operation)
+          ) {
             (args as any).where = { ...(args as any).where, ...scope };
           } else if (operation === 'upsert') {
             (args as any).where = { ...(args as any).where, ...scope };
@@ -64,7 +67,10 @@ export function withTenantScoping<T extends PrismaClient>(prisma: T) {
           } else if (CREATE_MANY_OPERATIONS.has(operation)) {
             const data = (args as any).data;
             (args as any).data = Array.isArray(data)
-              ? data.map((row: Record<string, unknown>) => ({ ...row, ...scope }))
+              ? data.map((row: Record<string, unknown>) => ({
+                  ...row,
+                  ...scope,
+                }))
               : data;
           }
 
