@@ -1,5 +1,6 @@
 import {
   Injectable,
+  ConflictException,
   UnauthorizedException,
   ForbiddenException,
   NotFoundException,
@@ -10,6 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { PrismaService } from '../../prisma/prisma.service';
+import { PermissionsService } from '../permissions/permissions.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import {
@@ -28,6 +30,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwt: JwtService,
     private config: ConfigService,
+    private permissions: PermissionsService,
     @InjectPinoLogger(AuthService.name) private logger: PinoLogger,
   ) {}
 
@@ -79,16 +82,10 @@ export class AuthService {
     await this.prisma.auditLog.create({
       data: { action, userId, tenantId, metadata },
     });
-    this.logger.info(
-      { event: 'audit', action, userId, tenantId, metadata },
-      action,
-    );
+    this.logger.info({ event: 'audit', action, userId, tenantId, metadata }, action);
   }
 
-  private async createOtp(
-    userId: string,
-    purpose: 'EMAIL_VERIFICATION' | 'PASSWORD_RESET',
-  ) {
+  private async createOtp(userId: string, purpose: 'EMAIL_VERIFICATION' | 'PASSWORD_RESET') {
     // Invalidate any previous unused OTPs of the same purpose first,
     // so only the most recently sent code is ever valid.
     await this.prisma.otpToken.updateMany({
@@ -121,18 +118,10 @@ export class AuthService {
       orderBy: { createdAt: 'desc' },
     });
 
-    if (!record)
-      throw new BadRequestException(
-        'No active code found — please request a new one',
-      );
-    if (record.expiresAt < new Date())
-      throw new BadRequestException(
-        'Code has expired — please request a new one',
-      );
+    if (!record) throw new BadRequestException('No active code found — please request a new one');
+    if (record.expiresAt < new Date()) throw new BadRequestException('Code has expired — please request a new one');
     if (record.attempts >= MAX_OTP_ATTEMPTS) {
-      throw new ForbiddenException(
-        'Too many incorrect attempts — please request a new code',
-      );
+      throw new ForbiddenException('Too many incorrect attempts — please request a new code');
     }
 
     const isMatch = await bcrypt.compare(otp, record.codeHash);
@@ -141,17 +130,11 @@ export class AuthService {
         where: { id: record.id },
         data: { attempts: { increment: 1 } },
       });
-      this.logger.warn(
-        { userId, purpose, attempts: record.attempts + 1 },
-        'Incorrect OTP attempt',
-      );
+      this.logger.warn({ userId, purpose, attempts: record.attempts + 1 }, 'Incorrect OTP attempt');
       throw new BadRequestException('Incorrect code');
     }
 
-    await this.prisma.otpToken.update({
-      where: { id: record.id },
-      data: { used: true },
-    });
+    await this.prisma.otpToken.update({ where: { id: record.id }, data: { used: true } });
     return true;
   }
 
@@ -187,27 +170,18 @@ export class AuthService {
     });
 
     const otp = await this.createOtp(user.id, 'EMAIL_VERIFICATION');
-    await sendEmail(
-      user.email,
-      'Verify your email',
-      emailVerificationOtpEmail(otp),
-    );
+    await sendEmail(user.email, 'Verify your email', emailVerificationOtpEmail(otp));
 
     await this.audit('USER_REGISTERED', user.id, user.tenantId);
     this.logger.info(
-      {
-        userId: user.id,
-        tenantId: user.tenantId,
-        onboardingStatus: user.onboardingStatus,
-      },
+      { userId: user.id, tenantId: user.tenantId, onboardingStatus: user.onboardingStatus },
       'Onboarding step: registration complete (tenant auto-created), awaiting email verification',
     );
 
     // No access/refresh tokens issued yet on purpose — the account can't be
     // used until the email is verified.
     return {
-      message:
-        'Account created. A verification code has been sent to your email.',
+      message: 'Account created. A verification code has been sent to your email.',
       userId: user.id,
       onboardingStatus: user.onboardingStatus,
     };
@@ -229,11 +203,7 @@ export class AuthService {
 
     await this.audit('EMAIL_VERIFIED', user.id, user.tenantId);
     this.logger.info(
-      {
-        userId: user.id,
-        tenantId: user.tenantId,
-        onboardingStatus: updated.onboardingStatus,
-      },
+      { userId: user.id, tenantId: user.tenantId, onboardingStatus: updated.onboardingStatus },
       'Onboarding step: email verified',
     );
 
@@ -249,28 +219,19 @@ export class AuthService {
     return { user: this.publicUser(updated), ...tokens };
   }
 
-  async resendOtp(
-    email: string,
-    purpose: 'EMAIL_VERIFICATION' | 'PASSWORD_RESET',
-  ) {
+  async resendOtp(email: string, purpose: 'EMAIL_VERIFICATION' | 'PASSWORD_RESET') {
     const user = await this.prisma.user.findFirst({ where: { email } });
 
-    if (!user)
-      return { message: 'If that email exists, a new code has been sent' };
+    if (!user) return { message: 'If that email exists, a new code has been sent' };
 
     if (purpose === 'EMAIL_VERIFICATION' && user.isEmailVerified) {
       return { message: 'Email is already verified. Please log in.' };
     }
 
     const otp = await this.createOtp(user.id, purpose);
-    const subject =
-      purpose === 'EMAIL_VERIFICATION'
-        ? 'Verify your email'
-        : 'Reset your password';
+    const subject = purpose === 'EMAIL_VERIFICATION' ? 'Verify your email' : 'Reset your password';
     const html =
-      purpose === 'EMAIL_VERIFICATION'
-        ? emailVerificationOtpEmail(otp)
-        : passwordResetOtpEmail(otp);
+      purpose === 'EMAIL_VERIFICATION' ? emailVerificationOtpEmail(otp) : passwordResetOtpEmail(otp);
     await sendEmail(user.email, subject, html);
 
     await this.audit('OTP_RESENT', user.id, user.tenantId, { purpose });
@@ -285,7 +246,7 @@ export class AuthService {
   async createOnboardingLocation(
     userId: string,
     tenantId: string,
-    dto: { name: string; address?: string },
+    dto: { name: string; address?: string; disabledModules?: string[] },
   ) {
     const { location, user } = await this.prisma.$transaction(async (tx) => {
       const location = await tx.location.create({
@@ -312,9 +273,12 @@ export class AuthService {
       return { location, user };
     });
 
-    await this.audit('ONBOARDING_LOCATION_CREATED', userId, tenantId, {
-      locationId: location.id,
-    });
+    // Which modules this location can access — this is what
+    // ModulePermissionGuard checks (in addition to the user's own
+    // permissions) on every request scoped to this location.
+    await this.permissions.ensureLocationModules(location.id, (dto.disabledModules as any) ?? []);
+
+    await this.audit('ONBOARDING_LOCATION_CREATED', userId, tenantId, { locationId: location.id });
     this.logger.info(
       { userId, tenantId, locationId: location.id },
       'Onboarding step: first location created, onboarding complete',
@@ -328,11 +292,7 @@ export class AuthService {
       activeLocationId: user.activeLocationId,
     });
 
-    return {
-      message: 'Location created. Onboarding complete.',
-      location,
-      ...tokens,
-    };
+    return { message: 'Location created. Onboarding complete.', location, ...tokens };
   }
 
   // ---------- Login / session ----------
@@ -344,35 +304,23 @@ export class AuthService {
   // if a user's post-verification token expired before they finished
   // onboarding, they'd have no way to get a new token to complete it.
   async login(dto: LoginDto, ipAddress?: string) {
-    const user = await this.prisma.user.findFirst({
-      where: { email: dto.email },
-    });
+    const user = await this.prisma.user.findFirst({ where: { email: dto.email } });
 
     if (!user || !(await bcrypt.compare(dto.password, user.passwordHash))) {
-      await this.audit(
-        'LOGIN_FAILED',
-        user?.id ?? null,
-        user?.tenantId ?? null,
-        {
-          email: dto.email,
-          ipAddress,
-        },
-      );
+      await this.audit('LOGIN_FAILED', user?.id ?? null, user?.tenantId ?? null, {
+        email: dto.email,
+        ipAddress,
+      });
       throw new UnauthorizedException('Invalid email or password');
     }
 
     if (!user.isActive) {
-      await this.audit('LOGIN_BLOCKED_INACTIVE', user.id, user.tenantId, {
-        ipAddress,
-      });
+      await this.audit('LOGIN_BLOCKED_INACTIVE', user.id, user.tenantId, { ipAddress });
       throw new ForbiddenException('This account has been deactivated');
     }
 
     if (!user.isEmailVerified) {
-      this.logger.info(
-        { userId: user.id },
-        'Login blocked — email not verified yet',
-      );
+      this.logger.info({ userId: user.id }, 'Login blocked — email not verified yet');
       throw new ForbiddenException({
         message: 'Please verify your email before logging in',
         step: 'EMAIL_VERIFICATION',
@@ -414,15 +362,10 @@ export class AuthService {
   async forgotPassword(email: string) {
     const user = await this.prisma.user.findFirst({ where: { email } });
 
-    if (!user)
-      return { message: 'If that email exists, a reset code has been sent' };
+    if (!user) return { message: 'If that email exists, a reset code has been sent' };
 
     const otp = await this.createOtp(user.id, 'PASSWORD_RESET');
-    await sendEmail(
-      user.email,
-      'Reset your password',
-      passwordResetOtpEmail(otp),
-    );
+    await sendEmail(user.email, 'Reset your password', passwordResetOtpEmail(otp));
 
     await this.audit('PASSWORD_RESET_REQUESTED', user.id, user.tenantId);
 
@@ -437,15 +380,9 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(newPassword, 10);
     await this.prisma.$transaction([
-      this.prisma.user.update({
-        where: { id: user.id },
-        data: { passwordHash },
-      }),
+      this.prisma.user.update({ where: { id: user.id }, data: { passwordHash } }),
       // Force re-login everywhere after a password reset
-      this.prisma.refreshToken.updateMany({
-        where: { userId: user.id },
-        data: { revoked: true },
-      }),
+      this.prisma.refreshToken.updateMany({ where: { userId: user.id }, data: { revoked: true } }),
     ]);
 
     await this.audit('PASSWORD_RESET_COMPLETED', user.id, user.tenantId);
@@ -492,15 +429,9 @@ export class AuthService {
       },
     });
 
-    await this.audit('ACTIVE_LOCATION_CHANGED', userId, user.tenantId, {
-      locationId,
-    });
+    await this.audit('ACTIVE_LOCATION_CHANGED', userId, user.tenantId, { locationId });
     this.logger.info(
-      {
-        userId,
-        tenantId: user.tenantId,
-        onboardingStatus: user.onboardingStatus,
-      },
+      { userId, tenantId: user.tenantId, onboardingStatus: user.onboardingStatus },
       'Active location changed',
     );
 
@@ -516,14 +447,8 @@ export class AuthService {
 
   // ---------- Admin-only actions ----------
 
-  async setUserActive(
-    adminTenantId: string,
-    targetUserId: string,
-    isActive: boolean,
-  ) {
-    const target = await this.prisma.user.findUnique({
-      where: { id: targetUserId },
-    });
+  async setUserActive(adminTenantId: string, targetUserId: string, isActive: boolean) {
+    const target = await this.prisma.user.findUnique({ where: { id: targetUserId } });
     if (!target || target.tenantId !== adminTenantId) {
       throw new NotFoundException('User not found in your organization');
     }
@@ -533,18 +458,12 @@ export class AuthService {
       data: { isActive },
     });
 
-    await this.audit(
-      isActive ? 'USER_ACTIVATED' : 'USER_DEACTIVATED',
-      targetUserId,
-      adminTenantId,
-    );
+    await this.audit(isActive ? 'USER_ACTIVATED' : 'USER_DEACTIVATED', targetUserId, adminTenantId);
     return this.publicUser(user);
   }
 
   async assignRole(adminTenantId: string, targetUserId: string, role: string) {
-    const target = await this.prisma.user.findUnique({
-      where: { id: targetUserId },
-    });
+    const target = await this.prisma.user.findUnique({ where: { id: targetUserId } });
     if (!target || target.tenantId !== adminTenantId) {
       throw new NotFoundException('User not found in your organization');
     }
@@ -554,9 +473,7 @@ export class AuthService {
       data: { role: role as any },
     });
 
-    await this.audit('ROLE_CHANGED', targetUserId, adminTenantId, {
-      newRole: role,
-    });
+    await this.audit('ROLE_CHANGED', targetUserId, adminTenantId, { newRole: role });
     return this.publicUser(user);
   }
 

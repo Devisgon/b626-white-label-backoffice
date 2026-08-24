@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { RequestContext } from '../../types/common.types';
 
 /**
  * Per-request context: who is calling, and which tenant/location they are
@@ -12,13 +13,11 @@ import { AsyncLocalStorage } from 'node:async_hooks';
  * across the whole async chain for that request — the middleware opens the
  * store early (before guards run, since req.user doesn't exist yet), and
  * the guard fills it in once the JWT has been verified.
+ *
+ * The RequestContext shape itself lives in src/types/common.types.ts —
+ * this file only holds the runtime AsyncLocalStorage instance and helpers.
  */
-export interface RequestContext {
-  tenantId: string;
-  locationId: string | null;
-  userId: string;
-  role: string;
-}
+export type { RequestContext };
 
 export const requestContextStorage = new AsyncLocalStorage<
   Partial<RequestContext>
