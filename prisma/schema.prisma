@@ -797,6 +797,15 @@ enum PayRunStatus {
   PAID
 }
 
+enum ThemeKey {
+  GREEN
+  BLUE
+  PURPLE
+  ORANGE
+  RED
+  DARK
+}
+
 // One payroll run for one location covering one pay period. Draft ->
 // Processed (payslip items generated from approved timesheets) -> Paid
 // (marked as disbursed, e.g. after bank transfers go out).
@@ -902,6 +911,7 @@ model StoreProfile {
   contactPhone String?
   timezone     String   @default("Asia/Karachi")
   currency     String   @default("PKR")
+  themeKey     ThemeKey @default(GREEN)
   updatedAt    DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id])

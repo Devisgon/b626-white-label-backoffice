@@ -1,21 +1,3 @@
-// import { Module } from '@nestjs/common';
-// import { StoreProfileController } from './store-profile/store-profile.controller';
-// import { StoreProfileService } from './store-profile/store-profile.service';
-// import { TaxController } from './tax/tax.controller';
-// import { TaxService } from './tax/tax.service';
-// import { ReceiptController } from './receipt/receipt.controller';
-// import { ReceiptService } from './receipt/receipt.service';
-// import { PaymentMethodsController } from './payment-methods/payment-methods.controller';
-// import { PaymentMethodsService } from './payment-methods/payment-methods.service';
-
-// @Module({
-//   controllers: [StoreProfileController, TaxController, ReceiptController, PaymentMethodsController],
-//   providers: [StoreProfileService, TaxService, ReceiptService, PaymentMethodsService],
-//   exports: [StoreProfileService, TaxService, ReceiptService, PaymentMethodsService],
-// })
-// export class SettingsModule {}
-
-
 import { Module } from '@nestjs/common';
 import { StoreProfileController } from './store-profile/store-profile.controller';
 import { StoreProfileService } from './store-profile/store-profile.service';
@@ -33,10 +15,9 @@ import { IntegrationsController } from './integrations/integrations.controller';
 import { IntegrationsService } from './integrations/integrations.service';
 import { ActivityLogController } from './activity-log/activity-log.controller';
 import { ActivityLogService } from './activity-log/activity-log.service';
+import { ThemeController } from './theme/theme.controller';
+import { ThemeService } from './theme/theme.service';
 
-// Day 1: Store Profile. Day 2: Tax. Day 3: Receipt + Payment Methods.
-// Day 4: Notifications + Security. Day 5: Integrations + Activity Log.
-// Settings module is now feature-complete (11/11 dashboard actions covered).
 @Module({
   controllers: [
     StoreProfileController,
@@ -47,6 +28,7 @@ import { ActivityLogService } from './activity-log/activity-log.service';
     SecurityController,
     IntegrationsController,
     ActivityLogController,
+    ThemeController,
   ],
   providers: [
     StoreProfileService,
@@ -57,6 +39,7 @@ import { ActivityLogService } from './activity-log/activity-log.service';
     SecurityService,
     IntegrationsService,
     ActivityLogService,
+    ThemeService,
   ],
   exports: [
     StoreProfileService,
@@ -67,6 +50,7 @@ import { ActivityLogService } from './activity-log/activity-log.service';
     SecurityService,
     IntegrationsService,
     ActivityLogService,
+    ThemeService,
   ],
 })
 export class SettingsModule {}
