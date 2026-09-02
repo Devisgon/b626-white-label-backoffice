@@ -280,16 +280,18 @@ model product_inventory {
 }
 
 model Tenant {
-  id        String     @id @default(uuid())
-  name      String
-  createdAt DateTime   @default(now())
-  locations Location[]
-  users     User[]
+  id           String        @id @default(uuid())
+  name         String
+  createdAt    DateTime      @default(now())
+  locations    Location[]
+  users        User[]
+  storeProfile StoreProfile?
 
   @@map("tenants")
 }
 
 model User {
+<<<<<<< HEAD
   id               String           @id @default(uuid())
   tenantId         String
   name             String
@@ -309,18 +311,48 @@ model User {
   refreshTokens    RefreshToken[]
   locationAccess   UserLocation[]
   tenant           Tenant           @relation(fields: [tenantId], references: [id])
+=======
+  id                      String                   @id @default(uuid())
+  tenantId                String
+  name                    String
+  email                   String
+  passwordHash            String
+  role                    Role                     @default(INVENTORY_USER)
+  isActive                Boolean                  @default(true)
+  isEmailVerified         Boolean                  @default(false)
+  onboardingStatus        OnboardingStatus         @default(PENDING_EMAIL_VERIFICATION)
+  activeLocationId        String?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  auditLogs               AuditLog[]
+  otpTokens               OtpToken[]
+  refreshTokens           RefreshToken[]
+  locationAccess          UserLocation[]
+  permissionOverrides     UserPermission[]
+  payrollProfile          PayrollProfile?
+  timesheets              Timesheet[]
+  payRunItems             PayRunItem[]
+  deductions              Deduction[]
+  leaveRequests           LeaveRequest[]
+  notificationPreferences NotificationPreference[]
+  tenant                  Tenant                   @relation(fields: [tenantId], references: [id])
+>>>>>>> 8aa5a0d3d1ba3a09dda289ae3ff3e2400b2521cd
 
   @@unique([tenantId, email])
   @@map("users")
 }
 
 model Location {
-  id         String         @id @default(uuid())
-  tenantId   String
-  name       String
-  address    String?
-  tenant     Tenant         @relation(fields: [tenantId], references: [id])
-  userAccess UserLocation[]
+  id           String                 @id @default(uuid())
+  tenantId     String
+  name         String
+  address      String?
+  tenant       Tenant                 @relation(fields: [tenantId], references: [id])
+  userAccess   UserLocation[]
+  moduleAccess LocationModuleAccess[]
+  timesheets   Timesheet[]
+  taxRules     TaxRule[]
+  payRuns      PayRun[]
 
   @@map("locations")
 }
@@ -397,6 +429,7 @@ model BankAccount {
   payees                        Payee[]
   recurringTransactionTemplates RecurringTransactionTemplate[]
   transactions                  Transaction[]
+  payrollProfiles               PayrollProfile[]
 
   @@index([tenantId, locationId], map: "idx_bank_accounts_tenant_location")
   @@map("bank_accounts")
@@ -632,6 +665,362 @@ enum Role {
   STORE_MANAGER
   INVENTORY_USER
   FINANCE_USER
+}
+
+// The business modules that exist in this system. Add a new value here
+// whenever a new module (e.g. SALES already added) is introduced — the
+// migration will just add an enum value, nothing else breaks.
+enum ModuleName {
+  AUTH
+  CATALOGUE
+  BANKING
+  SALES
+  PAYROLL
+  SETTINGS
+}
+
+// Granularity of a permission within a module. Kept small on purpose —
+// VIEW (read-only) vs MANAGE (create/update/delete). The guard used across
+// this codebase (ModulePermissionGuard) currently only checks module-level
+// access (VIEW/MANAGE both count as "has access"), but the action column
+// lets us tighten individual endpoints to MANAGE-only later without a
+// schema change.
+enum PermissionAction {
+  VIEW
+  MANAGE
+}
+
+// Master catalog of permissions. One row per (module, action) pair, e.g.
+// (BANKING, VIEW), (BANKING, MANAGE). Seeded by prisma/seed-permissions.ts.
+model Permission {
+  id          String           @id @default(uuid())
+  module      ModuleName
+  action      PermissionAction
+  description String?
+  createdAt   DateTime         @default(now())
+
+  rolePermissions RolePermission[]
+  userPermissions UserPermission[]
+
+  @@unique([module, action])
+  @@map("permissions")
+}
+
+// Default permissions granted to every user of a given Role. This is the
+// "role" layer of the RBAC — seeded once, editable later via
+// PATCH /api/permissions/roles/:role.
+model RolePermission {
+  id           String     @id @default(uuid())
+  role         Role
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([role, permissionId])
+  @@map("role_permissions")
+}
+
+// Per-user overrides on top of the role defaults. granted = true adds a
+// permission the user's role doesn't have by default; granted = false
+// revokes a permission the role would otherwise grant. This lets an
+// OWNER_ADMIN fine-tune one specific user without creating a whole new
+// role — the standard "role gives defaults, per-user overrides layer on
+// top" RBAC pattern.
+model UserPermission {
+  id           String     @id @default(uuid())
+  userId       String
+  permissionId String
+  granted      Boolean    @default(true)
+  grantedBy    String?
+  createdAt    DateTime   @default(now())
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permissionId])
+  @@map("user_permissions")
+}
+
+// Which modules are even switched on for a given store/location — e.g. a
+// small kiosk location might not use the Banking module at all. Checked by
+// ModulePermissionGuard in addition to the user's own permission. Rows are
+// created automatically (all modules enabled) when a location is created
+// via POST /api/auth/onboarding/location, and can be toggled per module by
+// an OWNER_ADMIN afterwards.
+model LocationModuleAccess {
+  id         String     @id @default(uuid())
+  locationId String
+  module     ModuleName
+  enabled    Boolean    @default(true)
+  location   Location   @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([locationId, module])
+  @@map("location_module_access")
+}
+
+// ---------- Payroll module (Day 1 slice) ----------
+// One row per employee — their pay rate/type and how they get paid.
+enum PayType {
+  HOURLY
+  SALARY
+}
+
+model PayrollProfile {
+  id            String   @id @default(uuid())
+  tenantId      String
+  userId        String   @unique
+  payType       PayType
+  baseRate      Decimal  @db.Decimal(12, 2) // hourly rate OR monthly salary, depending on payType
+  overtimeRate  Decimal? @db.Decimal(12, 2) // only meaningful when payType = HOURLY
+  bankAccountId String?  @db.Uuid // optional link to an existing BankAccount for direct deposit
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankAccount BankAccount? @relation(fields: [bankAccountId], references: [id])
+
+  @@map("payroll_profiles")
+}
+
+// Day 2: clock-in/clock-out records. status stays PENDING once clocked out
+// until an OWNER_ADMIN/FINANCE_USER approves or rejects it — Day 3's Pay
+// Run only pulls APPROVED timesheets into the calculation.
+enum TimesheetStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Timesheet {
+  id            String          @id @default(uuid())
+  tenantId      String
+  userId        String
+  locationId    String
+  clockIn       DateTime
+  clockOut      DateTime?
+  regularHours  Decimal?        @db.Decimal(6, 2)
+  overtimeHours Decimal?        @db.Decimal(6, 2)
+  status        TimesheetStatus @default(PENDING)
+  approvedBy    String?
+  approvedAt    DateTime?
+  notes         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location Location @relation(fields: [locationId], references: [id])
+
+  @@map("timesheets")
+}
+
+enum PayRunStatus {
+  DRAFT
+  PROCESSED
+  PAID
+}
+
+// One payroll run for one location covering one pay period. Draft ->
+// Processed (payslip items generated from approved timesheets) -> Paid
+// (marked as disbursed, e.g. after bank transfers go out).
+model PayRun {
+  id          String       @id @default(uuid())
+  tenantId    String
+  locationId  String
+  periodStart DateTime     @db.Date
+  periodEnd   DateTime     @db.Date
+  status      PayRunStatus @default(DRAFT)
+  runBy       String?
+  runAt       DateTime?
+  createdAt   DateTime     @default(now())
+
+  location Location     @relation(fields: [locationId], references: [id])
+  items    PayRunItem[]
+
+  @@map("pay_runs")
+}
+
+// One payslip — one employee's calculated pay for one PayRun.
+// grossPay = regularHours*rate + overtimeHours*overtimeRate.
+// netPay = grossPay - totalDeductions.
+model PayRunItem {
+  id              String  @id @default(uuid())
+  payRunId        String
+  userId          String
+  regularHours    Decimal @db.Decimal(6, 2)
+  overtimeHours   Decimal @db.Decimal(6, 2)
+  grossPay        Decimal @db.Decimal(12, 2)
+  totalDeductions Decimal @default(0) @db.Decimal(12, 2)
+  netPay          Decimal @db.Decimal(12, 2)
+
+  payRun PayRun @relation(fields: [payRunId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([payRunId, userId])
+  @@map("pay_run_items")
+}
+
+enum DeductionType {
+  TAX
+  INSURANCE
+  LOAN
+  OTHER
+}
+
+// A recurring or one-time deduction applied to an employee's pay runs.
+model Deduction {
+  id          String        @id @default(uuid())
+  tenantId    String
+  userId      String
+  type        DeductionType
+  amount      Decimal       @db.Decimal(12, 2)
+  isRecurring Boolean       @default(true)
+  isActive    Boolean       @default(true)
+  note        String?
+  createdAt   DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("deductions")
+}
+
+enum LeaveType {
+  SICK
+  CASUAL
+  PAID
+  UNPAID
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model LeaveRequest {
+  id         String      @id @default(uuid())
+  tenantId   String
+  userId     String
+  leaveType  LeaveType
+  startDate  DateTime    @db.Date
+  endDate    DateTime    @db.Date
+  reason     String?
+  status     LeaveStatus @default(PENDING)
+  approvedBy String?
+  approvedAt DateTime?
+  createdAt  DateTime    @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("leave_requests")
+}
+
+// ---------- Settings module (Day 1 slice) ----------
+model StoreProfile {
+  id           String   @id @default(uuid())
+  tenantId     String   @unique
+  storeName    String
+  logoUrl      String?
+  contactEmail String?
+  contactPhone String?
+  timezone     String   @default("Asia/Karachi")
+  currency     String   @default("PKR")
+  updatedAt    DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("store_profiles")
+}
+
+// Day 2: tax rates. locationId = null means the rule applies to every
+// location for this tenant; set it to scope a rate to one specific store.
+model TaxRule {
+  id          String   @id @default(uuid())
+  tenantId    String
+  locationId  String?
+  name        String
+  ratePercent Decimal  @db.Decimal(5, 2)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  location Location? @relation(fields: [locationId], references: [id])
+
+  @@map("tax_rules")
+}
+
+model ReceiptSettings {
+  id            String   @id @default(uuid())
+  tenantId      String   @unique
+  footerText    String?
+  showLogo      Boolean  @default(true)
+  invoicePrefix String   @default("INV-")
+  updatedAt     DateTime @updatedAt
+
+  @@map("receipt_settings")
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  WALLET
+  BANK_TRANSFER
+}
+
+model PaymentMethodConfig {
+  id        String        @id @default(uuid())
+  tenantId  String
+  method    PaymentMethod
+  isEnabled Boolean       @default(true)
+
+  @@unique([tenantId, method])
+  @@map("payment_method_configs")
+}
+
+enum NotificationEvent {
+  LOW_STOCK
+  PAYROLL_RUN
+  LOGIN_ALERT
+  LEAVE_REQUEST
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+}
+
+model NotificationPreference {
+  id        String              @id @default(uuid())
+  userId    String
+  event     NotificationEvent
+  channel   NotificationChannel
+  isEnabled Boolean             @default(true)
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, event, channel])
+  @@map("notification_preferences")
+}
+
+model SecurityPolicy {
+  id                    String   @id @default(uuid())
+  tenantId              String   @unique
+  minPasswordLength     Int      @default(8)
+  sessionTimeoutMinutes Int      @default(60)
+  require2FA            Boolean  @default(false)
+  updatedAt             DateTime @updatedAt
+
+  @@map("security_policies")
+}
+
+model ApiIntegration {
+  id         String   @id @default(uuid())
+  tenantId   String
+  provider   String
+  apiKeyHash String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  @@map("api_integrations")
 }
 
 enum OnboardingStatus {
@@ -896,6 +1285,7 @@ model lottery_settlements {
   @@index([tenant_id])
   @@map("lottery_settlements")
 }
+
 model CheckPrintBatch {
   id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId   String @map("tenant_id")
@@ -911,6 +1301,7 @@ model CheckPrintBatch {
   @@index([tenantId, locationId], map: "idx_check_print_batches_tenant_location")
   @@map("check_print_batches")
 }
+
 model PosConnection {
   id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId   String @map("tenant_id")
@@ -931,7 +1322,7 @@ model PosConnection {
   updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
   createdBy String?  @map("created_by")
 
-  mappings        PosMapping[] 
+  mappings        PosMapping[]
   outboundBatches PosOutboundBatch[]
   inboundBatches  PosInboundBatch[]
   events          PosEvent[]
@@ -1045,18 +1436,18 @@ model PosEvent {
 // ==========================================================
 
 model operations_shifts {
-  id             BigInt    @id @default(autoincrement())
-  staff_name     String
-  location_id    String?   @db.Uuid
-  opening_float  Decimal   @db.Decimal(12, 2)
-  closing_cash   Decimal?  @db.Decimal(12, 2)
-  shift_start    DateTime  @db.Timestamptz(6)
-  shift_end      DateTime? @db.Timestamptz(6)
-  status         String?   @default("Open")
-  created_at     DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at     DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
-  deleted_at     DateTime? @db.Timestamptz(6)
-  tenant_id      String?   @db.Uuid
+  id            BigInt    @id @default(autoincrement())
+  staff_name    String
+  location_id   String?   @db.Uuid
+  opening_float Decimal   @db.Decimal(12, 2)
+  closing_cash  Decimal?  @db.Decimal(12, 2)
+  shift_start   DateTime  @db.Timestamptz(6)
+  shift_end     DateTime? @db.Timestamptz(6)
+  status        String?   @default("Open")
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at    DateTime? @db.Timestamptz(6)
+  tenant_id     String?   @db.Uuid
 
   @@index([status])
   @@index([location_id])
@@ -1066,18 +1457,18 @@ model operations_shifts {
 }
 
 model operations_expenses {
-  id              BigInt    @id @default(autoincrement())
-  category        String
-  description     String?
-  amount          Decimal   @db.Decimal(14, 2)
-  location_id     String?   @db.Uuid
-  expense_date    DateTime  @db.Timestamptz(6)
-  payment_method  String?   @default("cash")
-  status          String?   @default("Recorded")
-  created_at      DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
-  deleted_at      DateTime? @db.Timestamptz(6)
-  tenant_id       String?   @db.Uuid
+  id             BigInt    @id @default(autoincrement())
+  category       String
+  description    String?
+  amount         Decimal   @db.Decimal(14, 2)
+  location_id    String?   @db.Uuid
+  expense_date   DateTime  @db.Timestamptz(6)
+  payment_method String?   @default("cash")
+  status         String?   @default("Recorded")
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at     DateTime? @db.Timestamptz(6)
+  tenant_id      String?   @db.Uuid
 
   @@index([category])
   @@index([status])
@@ -1088,17 +1479,17 @@ model operations_expenses {
 }
 
 model operations_maintenance_logs {
-  id            BigInt    @id @default(autoincrement())
-  title         String
-  description   String?
-  location_id   String?   @db.Uuid
-  priority      String?   @default("Medium")
-  reported_by   String?
-  status        String?   @default("Reported")
-  created_at    DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
-  deleted_at    DateTime? @db.Timestamptz(6)
-  tenant_id     String?   @db.Uuid
+  id          BigInt    @id @default(autoincrement())
+  title       String
+  description String?
+  location_id String?   @db.Uuid
+  priority    String?   @default("Medium")
+  reported_by String?
+  status      String?   @default("Reported")
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at  DateTime? @db.Timestamptz(6)
+  tenant_id   String?   @db.Uuid
 
   @@index([priority])
   @@index([status])
@@ -1108,18 +1499,18 @@ model operations_maintenance_logs {
 }
 
 model operations_checklist_items {
-  id               BigInt    @id @default(autoincrement())
-  item_name        String
-  checklist_type   String?   @default("Opening")
-  location_id      String?   @db.Uuid
-  checklist_date   DateTime  @db.Timestamptz(6)
-  completed_by     String?
-  completed_at     DateTime? @db.Timestamptz(6)
-  status           String?   @default("Pending")
-  created_at       DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at       DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
-  deleted_at       DateTime? @db.Timestamptz(6)
-  tenant_id        String?   @db.Uuid
+  id             BigInt    @id @default(autoincrement())
+  item_name      String
+  checklist_type String?   @default("Opening")
+  location_id    String?   @db.Uuid
+  checklist_date DateTime  @db.Timestamptz(6)
+  completed_by   String?
+  completed_at   DateTime? @db.Timestamptz(6)
+  status         String?   @default("Pending")
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at     DateTime? @db.Timestamptz(6)
+  tenant_id      String?   @db.Uuid
 
   @@index([checklist_type])
   @@index([checklist_date])

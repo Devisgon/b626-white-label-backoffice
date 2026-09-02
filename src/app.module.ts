@@ -10,6 +10,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { LocationsModule } from './modules/locations/locations.module';
+import { PermissionsModule } from './modules/permissions/permissions.module';
 
 // Product catalogue
 import { CatalogueModule } from './modules/catalogue/catalogue.module';
@@ -19,6 +20,12 @@ import { BankModule } from './modules/bank/bank.module';
 
 // Sales
 import { SalesModule } from './modules/sales/sales.module';
+
+// Payroll
+import { PayrollModule } from './modules/payroll/payroll.module';
+
+// Settings
+import { SettingsModule } from './modules/settings/settings.module';
 
 // Fuel
 import { FuelModule } from './modules/fuel/fuel.module';
@@ -33,6 +40,7 @@ import { RequestContextMiddleware } from './common/context/request-context.middl
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { TenantContextGuard } from './common/guards/tenant-context.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { ModulePermissionGuard } from './common/guards/module-permission.guard';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
@@ -40,7 +48,6 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { PosIntegrationModule } from './modules/pos-integration/pos-integration.module';
 
 //send to pos
-
 import { SendToPosModule } from './modules/send-to-pos/send-to-pos.module';
 
 @Module({
@@ -82,27 +89,34 @@ import { SendToPosModule } from './modules/send-to-pos/send-to-pos.module';
     AuthModule,
     UsersModule,
     LocationsModule,
+    PermissionsModule,
+
     CatalogueModule,
     BankModule,
     SalesModule,
+    PayrollModule,
+    SettingsModule,
 
     FuelModule,
     LotteryModule,
     OperationsModule,
 
+    PosIntegrationModule,
+    SendToPosModule,
   ],
 
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
 
     // Order matters:
-    // JwtAuthGuard -> TenantContextGuard -> RolesGuard
+    // JwtAuthGuard -> TenantContextGuard -> RolesGuard -> ModulePermissionGuard
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     {
       provide: APP_GUARD,
       useClass: TenantContextGuard,
     },
     { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: ModulePermissionGuard },
 
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     {

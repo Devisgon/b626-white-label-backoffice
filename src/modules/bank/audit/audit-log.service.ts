@@ -2,15 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../config/prisma.service';
 import type { RequestContext } from '../../../common/interfaces/request-context.interface';
 import { requireLocationId } from '../../../common/context/request-context.store';
-
-export interface AuditLogEntry {
-  entityType: string;
-  entityId: string;
-  action: string;
-  beforeData?: Record<string, any> | null;
-  afterData?: Record<string, any> | null;
-  notes?: string;
-}
+import { AuditLogEntry } from '../../../types/banking.types';
 
 @Injectable()
 export class AuditLogService {

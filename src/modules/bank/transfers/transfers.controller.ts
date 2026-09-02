@@ -22,7 +22,7 @@ import { Ctx } from '../../../common/decorators/tenant-location.decorator';
 import type { RequestContext } from '../../../common/interfaces/request-context.interface';
 import { RequireLocation } from '../../../common/decorators/require-location.decorator';
 import { Roles } from '../../../common/decorators/roles.decorator';
-import { Role } from '../../../modules/auth/enums/role.enum';
+import { Role } from '../../auth/enums/role.enum';
 
 @ApiTags('Fund Transfers')
 @Roles(Role.OWNER_ADMIN, Role.FINANCE_USER)
