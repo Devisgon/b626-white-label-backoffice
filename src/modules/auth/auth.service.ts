@@ -8,6 +8,8 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
+import * as speakeasy from 'speakeasy';
+import * as qrcode from 'qrcode';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
@@ -21,6 +23,11 @@ import {
 
 const OTP_EXPIRY_MINUTES = 10;
 const MAX_OTP_ATTEMPTS = 5;
+
+// Roles that must go through MFA once they've enabled it on their account.
+// Add other admin-level roles here if/when you introduce them (check
+// src/auth/enums/role.enum.ts for the full Role list).
+const MFA_REQUIRED_ROLES = ['OWNER_ADMIN'];
 
 @Injectable()
 export class AuthService {
@@ -379,6 +386,29 @@ export class AuthService {
       });
     }
 
+    // MFA check — only enforced for roles in MFA_REQUIRED_ROLES that have
+    // actually enabled it on their account (see setupMfa/confirmMfaSetup).
+    if (MFA_REQUIRED_ROLES.includes(user.role) && user.mfaEnabled) {
+      if (!dto.mfaCode) {
+        throw new ForbiddenException({
+          message: 'MFA code required',
+          step: 'MFA_REQUIRED',
+        });
+      }
+      const isValidMfa = speakeasy.totp.verify({
+        secret: user.mfaSecret!,
+        encoding: 'base32',
+        token: dto.mfaCode,
+        window: 1,
+      });
+      if (!isValidMfa) {
+        await this.audit('LOGIN_MFA_FAILED', user.id, user.tenantId, {
+          ipAddress,
+        });
+        throw new UnauthorizedException('Invalid MFA code');
+      }
+    }
+
     const tokens = await this.issueTokens({
       id: user.id,
       tenantId: user.tenantId,
@@ -407,6 +437,86 @@ export class AuthService {
     });
     await this.audit('LOGOUT', userId, null);
     return { message: 'Logged out successfully' };
+  }
+
+  // ---------- MFA ----------
+
+  // Step 1: generate a secret + QR code. mfaEnabled stays false until the
+  // user proves they scanned it correctly via confirmMfaSetup below.
+  async setupMfa(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const secretObj = speakeasy.generateSecret({
+      name: `BackofficeAPI (${user.email})`,
+    });
+    const secret = secretObj.base32;
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { mfaSecret: secret },
+    });
+
+    const otpauth = secretObj.otpauth_url!;
+    const qrCode = await qrcode.toDataURL(otpauth);
+
+    await this.audit('MFA_SETUP_STARTED', userId, user.tenantId);
+
+    return {
+      message:
+        'Scan this QR code in your authenticator app, then confirm with a code',
+      qrCode,
+    };
+  }
+
+  // Step 2: confirm the first code from the authenticator app to actually
+  // turn MFA on. This proves the secret was scanned correctly.
+  async confirmMfaSetup(userId: string, code: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user?.mfaSecret) {
+      throw new BadRequestException('MFA setup was not started');
+    }
+
+    const isValid = speakeasy.totp.verify({
+      secret: user.mfaSecret,
+      encoding: 'base32',
+      token: code,
+      window: 1,
+    });
+    if (!isValid) throw new BadRequestException('Invalid code');
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { mfaEnabled: true },
+    });
+
+    await this.audit('MFA_ENABLED', userId, user.tenantId);
+    return { message: 'MFA has been enabled on your account' };
+  }
+
+  // Lets a user turn MFA back off — requires a valid current code, not just
+  // a click, so someone can't disable it just by having a stolen session.
+  async disableMfa(userId: string, code: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user?.mfaEnabled || !user.mfaSecret) {
+      throw new BadRequestException('MFA is not enabled on this account');
+    }
+
+    const isValid = speakeasy.totp.verify({
+      secret: user.mfaSecret,
+      encoding: 'base32',
+      token: code,
+      window: 1,
+    });
+    if (!isValid) throw new BadRequestException('Invalid code');
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { mfaEnabled: false, mfaSecret: null },
+    });
+
+    await this.audit('MFA_DISABLED', userId, user.tenantId);
+    return { message: 'MFA has been disabled on your account' };
   }
 
   // ---------- Password reset (OTP-based) ----------
@@ -563,8 +673,8 @@ export class AuthService {
   // ---------- Utilities ----------
 
   private publicUser(user: any) {
-    // Never return passwordHash to the client
-    const { passwordHash, ...safe } = user;
+    // Never return passwordHash or mfaSecret to the client
+    const { passwordHash, mfaSecret, ...safe } = user;
     return safe;
   }
 }

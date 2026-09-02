@@ -296,6 +296,8 @@ model User {
   email            String
   passwordHash     String
   role             Role             @default(INVENTORY_USER)
+  mfaSecret        String?          // NEW
+  mfaEnabled       Boolean          @default(false) // NEW
   isActive         Boolean          @default(true)
   isEmailVerified  Boolean          @default(false)
   onboardingStatus OnboardingStatus @default(PENDING_EMAIL_VERIFICATION)
