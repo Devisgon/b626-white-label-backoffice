@@ -290,57 +290,7 @@ model Tenant {
   @@map("tenants")
 }
 
-model User {
-<<<<<<< HEAD
-  id               String           @id @default(uuid())
-  tenantId         String
-  name             String
-  email            String
-  passwordHash     String
-  role             Role             @default(INVENTORY_USER)
-  mfaSecret        String?          // NEW
-  mfaEnabled       Boolean          @default(false) // NEW
-  isActive         Boolean          @default(true)
-  isEmailVerified  Boolean          @default(false)
-  onboardingStatus OnboardingStatus @default(PENDING_EMAIL_VERIFICATION)
-  activeLocationId String?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  auditLogs        AuditLog[]
-  otpTokens        OtpToken[]
-  refreshTokens    RefreshToken[]
-  locationAccess   UserLocation[]
-  tenant           Tenant           @relation(fields: [tenantId], references: [id])
-=======
-  id                      String                   @id @default(uuid())
-  tenantId                String
-  name                    String
-  email                   String
-  passwordHash            String
-  role                    Role                     @default(INVENTORY_USER)
-  isActive                Boolean                  @default(true)
-  isEmailVerified         Boolean                  @default(false)
-  onboardingStatus        OnboardingStatus         @default(PENDING_EMAIL_VERIFICATION)
-  activeLocationId        String?
-  createdAt               DateTime                 @default(now())
-  updatedAt               DateTime                 @updatedAt
-  auditLogs               AuditLog[]
-  otpTokens               OtpToken[]
-  refreshTokens           RefreshToken[]
-  locationAccess          UserLocation[]
-  permissionOverrides     UserPermission[]
-  payrollProfile          PayrollProfile?
-  timesheets              Timesheet[]
-  payRunItems             PayRunItem[]
-  deductions              Deduction[]
-  leaveRequests           LeaveRequest[]
-  notificationPreferences NotificationPreference[]
-  tenant                  Tenant                   @relation(fields: [tenantId], references: [id])
->>>>>>> 8aa5a0d3d1ba3a09dda289ae3ff3e2400b2521cd
 
-  @@unique([tenantId, email])
-  @@map("users")
-}
 
 model Location {
   id           String                 @id @default(uuid())
@@ -476,7 +426,34 @@ model BankingAuditLog {
   @@index([tenantId, locationId], map: "idx_audit_logs_tenant_location")
   @@map("banking_audit_logs")
 }
-
+model User {
+  id                      String                   @id @default(uuid())
+  tenantId                String
+  name                    String
+  email                   String
+  passwordHash            String
+  role                    Role                     @default(INVENTORY_USER)
+  mfaSecret               String?
+  mfaEnabled              Boolean                  @default(false)
+  isActive                Boolean                  @default(true)
+  isEmailVerified         Boolean                  @default(false)
+  onboardingStatus        OnboardingStatus         @default(PENDING_EMAIL_VERIFICATION)
+  activeLocationId        String?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  auditLogs               AuditLog[]
+  otpTokens               OtpToken[]
+  refreshTokens           RefreshToken[]
+  locationAccess          UserLocation[]
+  permissionOverrides     UserPermission[]
+  payrollProfile          PayrollProfile?
+  timesheets              Timesheet[]
+  payRunItems             PayRunItem[]
+  deductions              Deduction[]
+  leaveRequests           LeaveRequest[]
+  notificationPreferences NotificationPreference[]
+  tenant                  Tenant                   @relation(fields: [tenantId], references: [id])
+}
 model ChartOfAccount {
   id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId         String            @map("tenant_id")
