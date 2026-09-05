@@ -453,7 +453,11 @@ model User {
   leaveRequests           LeaveRequest[]
   notificationPreferences NotificationPreference[]
   tenant                  Tenant                   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, email])
+  @@map("users")
 }
+
 model ChartOfAccount {
   id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId         String            @map("tenant_id")
